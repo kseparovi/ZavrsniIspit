@@ -19,19 +19,13 @@ class Product(models.Model):
         return self.name
 
 
-RATE_CHOICES = [
-    (1, '1 - Terrible'),
-    (2, '2 - Bad'),
-    (3, '3 - Ok'),
-    (4, '4 - Good'),
-    (5, '5 - Great')
-]
+
 
 class Review(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     title = models.CharField(max_length=255)
     content = models.TextField()
-    rate = models.IntegerField(choices=RATE_CHOICES)
+    rating = models.IntegerField()
     user = models.ForeignKey('auth.User', on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -71,5 +65,10 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return self.user.username
+
+
+
+
+
 
 

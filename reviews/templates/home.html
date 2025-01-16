@@ -1,91 +1,172 @@
-<!doctype html>
+{% load static %}
+
+<!DOCTYPE html>
 <html lang="en">
 <head>
-    {% load static %}
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>Recenziraj</title>
-    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Product Reviews</title>
+
+  <!-- CSS -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+  <link href="{% static 'css/materialize.css' %}" type="text/css" rel="stylesheet" media="screen,projection"/>
+  <link href="{% static 'css/style.css' %}" type="text/css" rel="stylesheet" media="screen,projection"/>
 </head>
 <body>
 
-<!-- Navigation Bar -->
-<nav class="navbar navbar-expand-lg navbar-light bg-secondary">
-    <a class="navbar-brand" href="home.html">
-        <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 200 200" class="d-inline-block align-top">
-            <path d="M 100,10 L 120,70 A 5,5 0 0,1 125,75 L 190,75 A 5,5 0 0,1 195,80 L 140,120 A 5,5 0 0,1 135,125 L 160,190 A 5,5 0 0,1 155,195 L 100,150 A 5,5 0 0,1 95,150 L 40,195 A 5,5 0 0,1 35,190 L 60,125 A 5,5 0 0,1 55,120 L 5,80 A 5,5 0 0,1 10,75 L 75,75 A 5,5 0 0,1 80,70 L 100,10 Z"
-                  fill="none"
-                  stroke="#FFD700"
-                  stroke-width="5"
-                  stroke-linejoin="round"
-                  stroke-linecap="round" />
-        </svg>
-    </a>
-    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse" id="navbarNav">
-        <p>RECENZIRAJ</p>
+  <!-- Navigation Bar -->
+  <nav class="white" role="navigation">
+    <div class="nav-wrapper container">
+      <a id="logo-container" href="#" class="brand-logo">Product Reviews</a>
+      <ul class="right hide-on-med-and-down">
+        <li><a href="#">Home</a></li>
+        <li><a href="#">Product Categories</a></li>
+        <li><a href="#">Top Reviews</a></li>
+        <li><a href="#">Write a Review</a></li>
+      </ul>
 
-        <ul class="navbar-nav ml-auto">
-            <li class="nav-item">
-
-                <a class="nav-link" href="#" id="loginBtn">Login</a>
-            </li>
-            <li class="nav-item" style="display:none;" id="logoutBtn">
-                <a class="nav-link" href="#">Logout</a>
-            </li>
-        </ul>
+      <ul id="nav-mobile" class="sidenav">
+        <li><a href="#">Home</a></li>
+        <li><a href="#">Product Categories</a></li>
+        <li><a href="#">Top Reviews</a></li>
+        <li><a href="#">Write a Review</a></li>
+      </ul>
+      <a href="#" data-target="nav-mobile" class="sidenav-trigger"><i class="material-icons">menu</i></a>
     </div>
-</nav>
+  </nav>
 
-<div class="text-center mb-4">
-    <h1>What are you looking for</h1>
-    <p>Real reviews</p>
-</div>
-
-<!-- Main Content -->
-<div class="search-bar-container">
-    <form class="form-inline justify-content-center">
-        <input class="form-control search-bar" type="search" placeholder="Search for products" aria-label="Search">
-        <button class="btn btn-outline-success search-button" type="submit">Search</button>
-    </form>
-</div>
-
-<!-- Footer -->
-<footer class="footer">
-    <div>
-        <div class="footer.a">
-            <p>About</p>
-            <p>Contact</p>
-
+  <!-- Hero Section -->
+  <div id="index-banner" class="parallax-container">
+    <div class="section no-pad-bot">
+      <div class="container">
+        <br><br>
+        <h1 class="header center teal-text text-lighten-2">Read and Write Product Reviews</h1>
+        <div class="row center">
+          <h5 class="header col s12 light">Discover the best products through honest reviews</h5>
         </div>
+        <div class="row center">
+          <a href="#write-review" id="download-button" class="btn-large waves-effect waves-light teal lighten-1">Write a Review</a>
+        </div>
+        <br><br>
+      </div>
     </div>
+    <div class="parallax"><img src="{% static 'images/background1.png' %}" alt="Background Image 1"></div>
+  </div>
 
+  <!-- Features Section -->
+  <div class="container">
+    <div class="section">
 
-</footer>
+      <!--   Icon Section   -->
+      <div class="row">
+        <div class="col s12 m4">
+          <div class="icon-block">
+            <h2 class="center brown-text"><i class="material-icons">rate_review</i></h2>
+            <h5 class="center">Honest Reviews</h5>
 
+            <p class="light">We provide honest and unbiased reviews to help you make informed purchasing decisions. Share your own experiences with the products you love or dislike!</p>
+          </div>
+        </div>
 
-<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-<script>
-    // Login/Logout functionality
-    const loginBtn = document.getElementById('loginBtn');
-    const logoutBtn = document.getElementById('logoutBtn');
+        <div class="col s12 m4">
+          <div class="icon-block">
+            <h2 class="center brown-text"><i class="material-icons">stars</i></h2>
+            <h5 class="center">Top-Rated Products</h5>
 
-    loginBtn.addEventListener('click', function() {
-        loginBtn.style.display = 'none';
-        logoutBtn.style.display = 'block';
-        alert("You are now logged in!");
-    });
+            <p class="light">Explore our top-rated products across various categories, based on real user feedback and ratings. Find the best deals and top-performing products.</p>
+          </div>
+        </div>
 
-    logoutBtn.addEventListener('click', function() {
-        loginBtn.style.display = 'block';
-        logoutBtn.style.display = 'none';
-        alert("You are now logged out!");
-    });
-</script>
+        <div class="col s12 m4">
+          <div class="icon-block">
+            <h2 class="center brown-text"><i class="material-icons">comment</i></h2>
+            <h5 class="center">Community Feedback</h5>
+
+            <p class="light">Engage with the community by commenting on reviews and sharing your thoughts. Help others make better decisions and get helpful insights from users like you.</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Product Categories Section -->
+  <div class="parallax-container valign-wrapper">
+    <div class="section no-pad-bot">
+      <div class="container">
+        <div class="row center">
+          <h5 class="header col s12 light">Browse Product Categories</h5>
+        </div>
+      </div>
+    </div>
+    <div class="parallax"><img src="{% static 'images/background1.png' %}" alt="Unsplashed background img 2"></div>
+  </div>
+
+  <div class="container">
+    <div class="section">
+
+      <div class="row">
+        <div class="col s12 center">
+          <h3><i class="mdi-content-send brown-text"></i></h3>
+          <h4>Explore Categories</h4>
+          <p class="left-align light">Find product reviews categorized for easy access to the most relevant information. Whether you're looking for gadgets, home appliances, beauty products, or more, we've got you covered.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Contact Us Section -->
+  <div class="parallax-container valign-wrapper">
+    <div class="section no-pad-bot">
+      <div class="container">
+        <div class="row center">
+          <h5 class="header col s12 light">Get in Touch with Us</h5>
+        </div>
+      </div>
+    </div>
+    <div class="parallax"><img src="{% static 'images/background1.png' %}" alt="Unsplashed background img 3"></div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="page-footer teal">
+    <div class="container">
+      <div class="row">
+        <div class="col l6 s12">
+          <h5 class="white-text">About Us</h5>
+          <p class="grey-text text-lighten-4">We are a community of product reviewers helping you make better purchasing decisions. Share your honest opinions and discover products that others love.</p>
+        </div>
+        <div class="col l3 s12">
+          <h5 class="white-text">Useful Links</h5>
+          <ul>
+            <li><a class="white-text" href="#!">Privacy Policy</a></li>
+            <li><a class="white-text" href="#!">Terms of Service</a></li>
+            <li><a class="white-text" href="#!">FAQ</a></li>
+            <li><a class="white-text" href="#!">Support</a></li>
+          </ul>
+        </div>
+        <div class="col l3 s12">
+          <h5 class="white-text">Connect with Us</h5>
+          <ul>
+            <li><a class="white-text" href="#!">Facebook</a></li>
+            <li><a class="white-text" href="#!">Twitter</a></li>
+            <li><a class="white-text" href="#!">Instagram</a></li>
+            <li><a class="white-text" href="#!">LinkedIn</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="footer-copyright">
+      <div class="container">
+      Made with love by <a class="brown-text text-lighten-3" href="https://www.example.com">Your Company</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+  <script src="{% static 'js/materialize.js' %}"></script>
+  <script src="{% static 'js/init.js' %}"></script>
+
 </body>
 </html>

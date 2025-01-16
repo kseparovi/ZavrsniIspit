@@ -5,6 +5,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-cnvfp0&$b387bord8=^b-al0394^&43@ln^i4^f*9_zbucmb88'
 DEBUG = True
 ALLOWED_HOSTS = []
+STATICFILES_DIRS = [
+    BASE_DIR / 'reviews/static',  # Replace with your app's static folder
+]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
