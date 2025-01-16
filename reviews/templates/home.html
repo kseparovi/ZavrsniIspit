@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Recenziraj</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/main.css' %}">
+</head>
+<body>
+
+<!-- Navigation Bar -->
+<nav class="navbar navbar-expand-lg navbar-light bg-secondary">
+    <a class="navbar-brand" href="home.html">
+        <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 200 200" class="d-inline-block align-top">
+            <path d="M 100,10 L 120,70 A 5,5 0 0,1 125,75 L 190,75 A 5,5 0 0,1 195,80 L 140,120 A 5,5 0 0,1 135,125 L 160,190 A 5,5 0 0,1 155,195 L 100,150 A 5,5 0 0,1 95,150 L 40,195 A 5,5 0 0,1 35,190 L 60,125 A 5,5 0 0,1 55,120 L 5,80 A 5,5 0 0,1 10,75 L 75,75 A 5,5 0 0,1 80,70 L 100,10 Z"
+                  fill="none"
+                  stroke="#FFD700"
+                  stroke-width="5"
+                  stroke-linejoin="round"
+                  stroke-linecap="round" />
+        </svg>
+    </a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+        <p>RECENZIRAJ</p>
+
+        <ul class="navbar-nav ml-auto">
+            <li class="nav-item">
+
+                <a class="nav-link" href="#" id="loginBtn">Login</a>
+            </li>
+            <li class="nav-item" style="display:none;" id="logoutBtn">
+                <a class="nav-link" href="#">Logout</a>
+            </li>
+        </ul>
+    </div>
+</nav>
+
+<div class="text-center mb-4">
+    <h1>What are you looking for</h1>
+    <p>Real reviews</p>
+</div>
+
+<!-- Main Content -->
+<div class="search-bar-container">
+    <form class="form-inline justify-content-center">
+        <input class="form-control search-bar" type="search" placeholder="Search for products" aria-label="Search">
+        <button class="btn btn-outline-success search-button" type="submit">Search</button>
+    </form>
+</div>
+
+<!-- Footer -->
+<footer class="footer">
+    <div>
+        <div class="footer.a">
+            <p>About</p>
+            <p>Contact</p>
+
+        </div>
+    </div>
+
+
+</footer>
+
+
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+<script>
+    // Login/Logout functionality
+    const loginBtn = document.getElementById('loginBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+
+    loginBtn.addEventListener('click', function() {
+        loginBtn.style.display = 'none';
+        logoutBtn.style.display = 'block';
+        alert("You are now logged in!");
+    });
+
+    logoutBtn.addEventListener('click', function() {
+        loginBtn.style.display = 'block';
+        logoutBtn.style.display = 'none';
+        alert("You are now logged out!");
+    });
+</script>
+</body>
+</html>
