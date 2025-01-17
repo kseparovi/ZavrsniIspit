@@ -1,92 +1,62 @@
+{% extends 'base.html' %}
 {% load static %}
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Product Reviews</title>
+{% block title %}Home - Product Reviews{% endblock %}
 
-  <!-- CSS -->
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-  <link href="{% static 'css/materialize.css' %}" type="text/css" rel="stylesheet" media="screen,projection"/>
-  <link href="{% static 'css/style.css' %}" type="text/css" rel="stylesheet" media="screen,projection"/>
-</head>
-<body>
-
-  <!-- Navigation Bar -->
-  <nav class="white" role="navigation">
-    <div class="nav-wrapper container">
-      <a id="logo-container" href="#" class="brand-logo">Product Reviews</a>
-      <ul class="right hide-on-med-and-down">
-        <li><a href="#">Home</a></li>
-        <li><a href="#">Product Categories</a></li>
-        <li><a href="#">Top Reviews</a></li>
-        <li><a href="#">Write a Review</a></li>
-      </ul>
-
-      <ul id="nav-mobile" class="sidenav">
-        <li><a href="#">Home</a></li>
-        <li><a href="#">Product Categories</a></li>
-        <li><a href="#">Top Reviews</a></li>
-        <li><a href="#">Write a Review</a></li>
-      </ul>
-      <a href="#" data-target="nav-mobile" class="sidenav-trigger"><i class="material-icons">menu</i></a>
-    </div>
-  </nav>
-
+{% block content %}
   <!-- Hero Section -->
   <div id="index-banner" class="parallax-container">
     <div class="section no-pad-bot">
       <div class="container">
         <br><br>
-        <h1 class="header center teal-text text-lighten-2">Read and Write Product Reviews</h1>
+
         <div class="row center">
-          <h5 class="header col s12 light">Discover the best products through honest reviews</h5>
+          <h1 class="header col s12 light">Discover the best products through honest reviews</h1>
         </div>
+
         <div class="row center">
-          <a href="#write-review" id="download-button" class="btn-large waves-effect waves-light teal lighten-1">Write a Review</a>
+          <form class="col s12">
+            <div class="input-field col s12">
+              <input id="search" type="search" required>
+              <label for="search">Search Products</label>
+              <i class="material-icons">close</i>
+            </div>
+          </form>
         </div>
+
         <br><br>
       </div>
     </div>
-    <div class="parallax"><img src="{% static 'images/background1.png' %}" alt="Background Image 1"></div>
+    <div class="parallax"><img src="{% static 'images/img.jpg' %}" alt="Background Image 1"></div>
   </div>
 
   <!-- Features Section -->
   <div class="container">
     <div class="section">
-
       <!--   Icon Section   -->
       <div class="row">
         <div class="col s12 m4">
           <div class="icon-block">
             <h2 class="center brown-text"><i class="material-icons">rate_review</i></h2>
             <h5 class="center">Honest Reviews</h5>
-
             <p class="light">We provide honest and unbiased reviews to help you make informed purchasing decisions. Share your own experiences with the products you love or dislike!</p>
           </div>
         </div>
-
         <div class="col s12 m4">
           <div class="icon-block">
             <h2 class="center brown-text"><i class="material-icons">stars</i></h2>
             <h5 class="center">Top-Rated Products</h5>
-
             <p class="light">Explore our top-rated products across various categories, based on real user feedback and ratings. Find the best deals and top-performing products.</p>
           </div>
         </div>
-
         <div class="col s12 m4">
           <div class="icon-block">
             <h2 class="center brown-text"><i class="material-icons">comment</i></h2>
             <h5 class="center">Community Feedback</h5>
-
             <p class="light">Engage with the community by commenting on reviews and sharing your thoughts. Help others make better decisions and get helpful insights from users like you.</p>
           </div>
         </div>
       </div>
-
     </div>
   </div>
 
@@ -99,12 +69,11 @@
         </div>
       </div>
     </div>
-    <div class="parallax"><img src="{% static 'images/background1.png' %}" alt="Unsplashed background img 2"></div>
+    <div class="parallax"><img src="{% static 'images/img.jpg' %}" alt="Unsplashed background img 2"></div>
   </div>
 
   <div class="container">
     <div class="section">
-
       <div class="row">
         <div class="col s12 center">
           <h3><i class="mdi-content-send brown-text"></i></h3>
@@ -112,7 +81,6 @@
           <p class="left-align light">Find product reviews categorized for easy access to the most relevant information. Whether you're looking for gadgets, home appliances, beauty products, or more, we've got you covered.</p>
         </div>
       </div>
-
     </div>
   </div>
 
@@ -125,48 +93,6 @@
         </div>
       </div>
     </div>
-    <div class="parallax"><img src="{% static 'images/background1.png' %}" alt="Unsplashed background img 3"></div>
+    <div class="parallax"><img src="{% static 'images/img.jpg' %}" alt="Unsplashed background img 3"></div>
   </div>
-
-  <!-- Footer -->
-  <footer class="page-footer teal">
-    <div class="container">
-      <div class="row">
-        <div class="col l6 s12">
-          <h5 class="white-text">About Us</h5>
-          <p class="grey-text text-lighten-4">We are a community of product reviewers helping you make better purchasing decisions. Share your honest opinions and discover products that others love.</p>
-        </div>
-        <div class="col l3 s12">
-          <h5 class="white-text">Useful Links</h5>
-          <ul>
-            <li><a class="white-text" href="#!">Privacy Policy</a></li>
-            <li><a class="white-text" href="#!">Terms of Service</a></li>
-            <li><a class="white-text" href="#!">FAQ</a></li>
-            <li><a class="white-text" href="#!">Support</a></li>
-          </ul>
-        </div>
-        <div class="col l3 s12">
-          <h5 class="white-text">Connect with Us</h5>
-          <ul>
-            <li><a class="white-text" href="#!">Facebook</a></li>
-            <li><a class="white-text" href="#!">Twitter</a></li>
-            <li><a class="white-text" href="#!">Instagram</a></li>
-            <li><a class="white-text" href="#!">LinkedIn</a></li>
-          </ul>
-        </div>
-      </div>
-    </div>
-    <div class="footer-copyright">
-      <div class="container">
-      Made with love by <a class="brown-text text-lighten-3" href="https://www.example.com">Your Company</a>
-      </div>
-    </div>
-  </footer>
-
-  <!-- Scripts -->
-  <script src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
-  <script src="{% static 'js/materialize.js' %}"></script>
-  <script src="{% static 'js/init.js' %}"></script>
-
-</body>
-</html>
+{% endblock %}

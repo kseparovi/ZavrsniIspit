@@ -1,10 +1,61 @@
-from django.shortcuts import render, get_object_or_404
+from django.contrib.auth import authenticate
+from django.shortcuts import render, get_object_or_404, redirect
 from .models import Product, Review, Comment, ReviewRating
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth import login as auth_login
+from django.shortcuts import render, redirect
+from django.contrib.auth.models import User
 
+
+
+from django.shortcuts import render, redirect
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth import login as auth_login
+
+def user_signup(request):
+    if request.method == 'POST':
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            auth_login(request, user)  # Log the user in after registration
+            return redirect('reviews:home')  # Redirect to home after successful signup
+        else:
+            return render(request, 'signup.html', {'form': form, 'error': 'Please correct the errors below'})
+    else:
+        form = UserCreationForm()
+    return render(request, 'signup.html', {'form': form})
 
 def index(request):
     return render(request, 'home.html')
 
+
+def login(request):
+    if request.method == 'POST':
+        username = request.POST['username']
+        password = request.POST['password']
+        user = authenticate(request, username=username, password=password)
+        if user is not None:
+            auth_login(request, user)
+            return redirect('reviews:home')
+        else:
+            return render(request, 'login.html', {'error': 'Invalid credentials'})
+    return render(request, 'login.html')
+
+def user_signup(request):
+    if request.method == 'POST':
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            # Automatically make the user an admin (this is an example, use with caution)
+            user.is_staff = True  # Make the user an admin
+            user.save()
+            auth_login(request, user)  # Log the user in after successful signup
+            return redirect('reviews:home')  # Redirect to home page after signing up
+        else:
+            return render(request, 'signup.html', {'form': form, 'error': 'Please correct the errors below'})
+    else:
+        form = UserCreationForm()
+    return render(request, 'signup.html', {'form': form})
 def product_detail(request, pk):
     product = get_object_or_404(Product, pk=pk)
     return render(request, 'reviews/product_detail.html', {'product': product})

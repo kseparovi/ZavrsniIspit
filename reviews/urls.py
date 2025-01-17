@@ -7,6 +7,9 @@ app_name = 'reviews'
 
 urlpatterns = [
     path('', views.index, name='home'),
+    path('login/', views.login, name='login'),
+    path('signup/', views.user_signup, name='signup'),  # Add this line for the signup URL
+
     path('product/<int:pk>/', views.product_detail, name='product_detail'), # pk is the primary key of the product
     path('review/<int:pk>/', views.review_detail, name='review_detail'), # pk is the primary key of the review
     path('add-review/<int:product_id>/', views.add_review, name='add_review'),
