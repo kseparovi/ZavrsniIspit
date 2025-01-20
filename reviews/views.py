@@ -1,4 +1,5 @@
 from django.contrib.auth import authenticate
+from django.core.paginator import Paginator
 from django.shortcuts import render, get_object_or_404, redirect
 from .models import Product, Review, Comment, ReviewRating
 from django.contrib.auth.forms import UserCreationForm
@@ -56,6 +57,20 @@ def user_signup(request):
     else:
         form = UserCreationForm()
     return render(request, 'signup.html', {'form': form})
+
+
+def product_list(request):
+    products = Product.objects.all()
+    brands = ["Samsung", "Huawei", "Xiaomi", "Motorola", "Nokia", "Apple", "Honor", "Poco"]
+
+    context = {
+        "products": products,
+        "brands": brands,
+    }
+    return render(request, "products.html", context)
+
+
+
 def product_detail(request, pk):
     product = get_object_or_404(Product, pk=pk)
     return render(request, 'reviews/product_detail.html', {'product': product})

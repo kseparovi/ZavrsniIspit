@@ -26,7 +26,8 @@
 
       <!-- Navigation Links -->
       <ul class="right hide-on-med-and-down">
-        <li><a href="#">Product Categories</a></li>
+        <li><a href="{% url 'reviews:product_list' %}">Products</a></li>
+
         <li><a href="#">Top Reviews</a></li>
         <li><a href="#">Write a Review</a></li>
         <li><a href="{% url 'reviews:login' %}">Login</a></li> <!-- Correct namespaced login URL -->
@@ -34,7 +35,8 @@
 
       <!-- Mobile Navigation -->
       <ul id="nav-mobile" class="sidenav">
-        <li><a href="#">Product Categories</a></li>
+       <li><a href="{% url 'reviews:product_list' %}">Products</a></li>
+
         <li><a href="#">Top Reviews</a></li>
         <li><a href="#">Write a Review</a></li>
         <li><a href="{% url 'reviews:login' %}">Login</a></li> <!-- Correct namespaced login URL -->

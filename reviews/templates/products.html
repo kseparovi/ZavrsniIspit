@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Products{% endblock %}
+
+{% block content %}
+<div class="container">
+  <!-- Left Filter Panel -->
+  <div class="filter-panel">
+    <h2>Filters</h2>
+    <label for="brand">Brand</label>
+    <select id="brand">
+      <option value="all">All Brands</option>
+      <option value="apple">Apple</option>
+      <option value="samsung">Samsung</option>
+
+    </select>
+    <label for="price">Price Range</label>
+    <input type="range" id="price" min="1000" max="2000">
+
+    <label for="color">Color</label>
+    <select id="color">
+      <option value="all">All Colors</option>
+      <option value="black">Black</option>
+      <option value="silver">Silver</option>
+      <option value="gold">Gold</option>
+    </select>
+  </div>
+
+  <!-- Right Product Grid -->
+  <div class="product-grid">
+    <div class="product-container">
+      <!-- Product 1 -->
+      <div class="product-card">
+        <img src="{% static 'images/iphone.jpg' %}" alt="iPhone 16 Pro Max" class="product-image">
+        <div class="product-name">Apple iPhone 16 Pro Max 5G 1TB</div>
+        <div class="product-price">1774.00 €</div>
+      </div>
+
+      <!-- Product 2 -->
+      <div class="product-card">
+        <img src="{% static 'images/iphone.jpg' %}" alt="iPhone 16 Pro Max" class="product-image">
+        <div class="product-name">Apple iPhone 16 Pro 5G 1TB</div>
+        <div class="product-price">1657.00 €</div>
+      </div>
+
+      <!-- Product 3 -->
+      <div class="product-card">
+        <img src="{% static 'images/iphone.jpg' %}" alt="iPhone 16 Pro Max" class="product-image">
+        <div class="product-name">Apple iPhone 16 Pro Max 5G 512GB</div>
+        <div class="product-price">1549.00 €</div>
+      </div>
+
+      <!-- Add more products as needed -->
+    </div>
+  </div>
+</div>
+{% endblock %}
