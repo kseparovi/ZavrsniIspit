@@ -1,6 +1,5 @@
-from xml.etree.ElementInclude import include
-
 from django.urls import path
+from django.contrib.auth import views as auth_views
 from . import views
 
 app_name = 'reviews'
@@ -16,4 +15,5 @@ urlpatterns = [
     path('compare/', views.compare_products, name='compare_products'),
     path('comment/<int:review_id>/', views.add_comment, name='add_comment'),
     path('rate-review/<int:review_id>/', views.rate_review, name='rate_review'),
+    path('logout/', auth_views.LogoutView.as_view(next_page='reviews:home'), name='logout'),  # Redirect to home after logout
 ]
