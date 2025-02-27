@@ -53,5 +53,5 @@ Budući da različite web stranice koriste različite ocjene (npr. 1-5, 1-10, th
 Prikupljene recenzije se spremaju u bazu i prikazuju na web stranici, omogućujući korisnicima filtriranje i pregled različitih ocjena i komentara.
 
 ## Kontakt
-Za više informacija, kontaktirajte autora projekta putem e-maila: **tvojemail@example.com**.
+Za više informacija, kontaktirajte autora projekta putem e-maila: **kseparovi@student.unizd.hr**.
 

@@ -1,32 +1,22 @@
 from django.db import models
-
-
+from django.contrib.auth.models import User
 
 class Product(models.Model):
     name = models.CharField(max_length=255)
-    category = models.CharField(max_length=255)
-    price = models.DecimalField(max_digits=10, decimal_places=2)
-    description = models.TextField()
-
-    def average_rating(self):
-        reviews = self.review_set.all()  # Dohvaća sve povezane recenzije
-        if reviews:
-            total_rating = sum(review.rating for review in reviews)
-            return total_rating / len(reviews)
-        return 0  # Ako nema recenzija, vraća 0
+    image_url = models.URLField()
+    product_link = models.URLField()
+    category = models.CharField(max_length=255, blank=True, null=True)
+    price = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
 
     def __str__(self):
         return self.name
 
-
-
-
 class Review(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     title = models.CharField(max_length=255)
     content = models.TextField()
     rating = models.IntegerField()
-    user = models.ForeignKey('auth.User', on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -34,43 +24,34 @@ class Review(models.Model):
 
 class Comment(models.Model):
     review = models.ForeignKey(Review, on_delete=models.CASCADE)
-    user = models.ForeignKey('auth.User', on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return self.content
+        return self.content[:50]
 
 class ReviewRating(models.Model):
     review = models.ForeignKey(Review, on_delete=models.CASCADE)
-    user = models.ForeignKey('auth.User', on_delete=models.CASCADE)
-    is_helpful = models.BooleanField()
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    is_helpful = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.user} - {self.review}"
+        return f'{self.user.username} - {self.review.title}'
 
 class Comparison(models.Model):
-    user = models.ForeignKey('auth.User', on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     products = models.ManyToManyField(Product)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Comparison by {self.user}"
+        return f'Comparison by {self.user.username}'
 
 class UserProfile(models.Model):
-    user = models.OneToOneField('auth.User', on_delete=models.CASCADE)
-    bio = models.TextField()
-    location = models.CharField(max_length=255)
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    bio = models.TextField(blank=True, null=True)
+    location = models.CharField(max_length=255, blank=True, null=True)
 
     def __str__(self):
         return self.user.username
-
-
-
-
-
-
-
-
-

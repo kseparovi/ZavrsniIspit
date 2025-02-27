@@ -1,31 +1,142 @@
 from django.contrib.auth import authenticate
-from django.core.paginator import Paginator
-from django.shortcuts import render, get_object_or_404, redirect
-from .models import Product, Review, Comment, ReviewRating
+import requests
+from django.shortcuts import render, redirect
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import login as auth_login
-from django.contrib.auth.models import User
+from bs4 import BeautifulSoup
+import re
+
+def get_content(url):
+    """Fetch page content from the given GSM Arena URL."""
+    USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36"
+    session = requests.Session()
+    session.headers.update({
+        'User-Agent': USER_AGENT
+    })
+    response = session.get(url)
+    if response.status_code == 200:
+        return response.text
+    else:
+        print(f"Error fetching page {url}, status code: {response.status_code}")
+        return ""
+
+def extract_series(product_name, brand):
+    """Extract the product series based on the brand and model name."""
+    series_patterns = {
+        "Samsung": r"Galaxy (M|A|F|S|Z|Note|X)\d+",
+        "Apple": r"iPhone \d+|iPhone [A-Z]+",
+        "Huawei": r"Mate \d+|P\d+",
+        "Xiaomi": r"Redmi \d+|Mi \d+|Poco \w+",
+        "Other": r"\b(Watch|Tablet|Laptop)\b"
+    }
+    pattern = series_patterns.get(brand, "")
+    match = re.search(pattern, product_name)
+    return match.group(0) if match else "Other"
+
+def extract_product_type(product_name):
+    """Categorize product as Phone, Tablet, Laptop, or Other."""
+    product_patterns = {
+        "Phone": r"(iPhone|Galaxy|Redmi|Mate|P)\s*\d+",
+        "Tablet": r"(iPad|Tab|MatePad)",
+        "Laptop": r"(MacBook|MateBook|Mi Notebook)"
+    }
+    for category, pattern in product_patterns.items():
+        if re.search(pattern, product_name, re.IGNORECASE):
+            return category
+    return "Other"
+
+def scrape_products():
+    """Scrape products from GSM Arena's desktop site for Samsung, Apple, Huawei, and Xiaomi."""
+    product_info_list = []
+    urls = {
+        "Samsung": "https://www.gsmarena.com/samsung-phones-9.php",
+        "Apple": "https://www.gsmarena.com/apple-phones-48.php",
+        "Huawei": "https://www.gsmarena.com/huawei-phones-58.php",
+        "Xiaomi": "https://www.gsmarena.com/xiaomi-phones-80.php"
+    }
+    for brand, url in urls.items():
+        html_content = get_content(url)
+        if not html_content:
+            continue
+        soup = BeautifulSoup(html_content, 'html.parser')
+        product_list_div = soup.find('div', class_='makers')
+        if not product_list_div:
+            print(f"Error: Could not find product list for {brand}")
+            print(f"Fetched HTML Preview: {soup.prettify()[:500]}")
+            continue
+        product_items = product_list_div.find_all('li')
+        for item in product_items:
+            link = item.find('a')
+            img_tag = item.find('img')
+            name_tag = item.find('span')
+            if link and img_tag and name_tag:
+                product_name = name_tag.text.strip()
+                image_url = img_tag['src']
+                product_link = "https://www.gsmarena.com/" + link['href']
+                product_series = extract_series(product_name, brand)
+                product_type = extract_product_type(product_name)
+                product_info_list.append({
+                    'name': product_name,
+                    'image_url': image_url,
+                    'link': product_link,
+                    'brand': brand,
+                    'series': product_series,
+                    'type': product_type
+                })
+    return product_info_list
+
+def products(request):
+    """Display products with brand, series, and product type filtering."""
+    product_info_list = scrape_products()
+    selected_brands = request.GET.getlist('brand')
+    selected_series = request.GET.getlist('series')
+    selected_types = request.GET.getlist('type')
+
+    print("Selected Brands:", selected_brands)
+    print("Selected Series:", selected_series)
+    print("Selected Types:", selected_types)
+    print("Total Products Before Filtering:", len(product_info_list))
+
+    if selected_brands:
+        product_info_list = [p for p in product_info_list if p['brand'] in selected_brands]
+    if selected_series:
+        product_info_list = [p for p in product_info_list if any(series in p['series'] for series in selected_series)]
+    if selected_types:
+        product_info_list = [p for p in product_info_list if p['type'] in selected_types]
+
+    print("Filtered Products Count:", len(product_info_list))  # Debugging
+    print("Filtered Products:", product_info_list[:5])  # Show first 5 products
+
+    return render(request, 'products.html', {
+        'products': product_info_list,
+        'selected_brands': selected_brands,
+        'selected_series': selected_series,
+        'selected_types': selected_types
+    })
+
+
+def index(request):
+    """Render home page."""
+    return render(request, 'home.html')
 
 def user_signup(request):
+    """Handle user sign-up."""
     if request.method == 'POST':
         form = UserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
-            # Automatically make the user an admin (this is an example, use with caution)
-            user.is_staff = True  # Make the user an admin
+            user.is_staff = True
             user.save()
-            auth_login(request, user)  # Log the user in after successful signup
-            return redirect('reviews:home')  # Redirect to home page after signing up
+            auth_login(request, user)
+            return redirect('reviews:home')
         else:
             return render(request, 'signup.html', {'form': form, 'error': 'Please correct the errors below'})
     else:
         form = UserCreationForm()
     return render(request, 'signup.html', {'form': form})
 
-def index(request):
-    return render(request, 'home.html')
-
 def login(request):
+    """Handle user login."""
     if request.method == 'POST':
         username = request.POST['username']
         password = request.POST['password']
@@ -36,46 +147,3 @@ def login(request):
         else:
             return render(request, 'login.html', {'error': 'Invalid credentials'})
     return render(request, 'login.html')
-
-def product_list(request):
-    products = Product.objects.all()
-    brands = ["Samsung", "Huawei", "Xiaomi", "Motorola", "Nokia", "Apple", "Honor", "Poco"]
-
-    context = {
-        "products": products,
-        "brands": brands,
-    }
-    return render(request, "products.html", context)
-
-def product_detail(request, pk):
-    product = get_object_or_404(Product, pk=pk)
-    return render(request, 'reviews/product_detail.html', {'product': product})
-
-def review_detail(request, pk):
-    review = get_object_or_404(Review, pk=pk)
-    return render(request, 'reviews/review_detail.html', {'review': review})
-
-def add_review(request, product_id):
-    product = get_object_or_404(Product, pk=product_id)
-    if request.method == 'POST':
-        # Handle form submission
-        pass
-    return render(request, 'reviews/add_review.html', {'product': product})
-
-def compare_products(request):
-    # Add logic to handle product comparison
-    return render(request, 'reviews/compare_products.html')
-
-def add_comment(request, review_id):
-    review = get_object_or_404(Review, pk=review_id)
-    if request.method == 'POST':
-        # Handle form submission
-        pass
-    return render(request, 'reviews/add_comment.html', {'review': review})
-
-def rate_review(request, review_id):
-    review = get_object_or_404(Review, pk=review_id)
-    if request.method == 'POST':
-        # Handle form submission
-        pass
-    return render(request, 'reviews/rate_review.html', {'review': review})

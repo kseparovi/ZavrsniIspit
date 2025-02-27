@@ -1,92 +1,139 @@
-{% extends 'base.html' %}
-{% load static %}
+{% extends "base.html" %}
 
-{% block title %}Products{% endblock %}
+{% block title %}Product List{% endblock %}
 
 {% block content %}
-<div class="container">
-  <!-- Left Filter Panel -->
-  <div class="filter-panel">
-    <h2>Filters</h2>
-    <label for="brand">Brand</label>
-    <select id="brand">
-      <option value="all">All Brands</option>
-      <option value="apple">Apple</option>
-      <option value="samsung">Samsung</option>
+    <div class="container">
+        <div class="row">
+            <!-- Filter Sidebar -->
+            <div class="col s12 m3">
+                <h5>Filter by Brand</h5>
+                <form method="get">
+                    <p>
+                        <label>
+                            <input type="checkbox" name="brand" value="Samsung" {% if 'Samsung' in selected_brands %}checked{% endif %}>
+                            <span>Samsung</span>
+                        </label>
+                    </p>
+                    <p>
+                        <label>
+                            <input type="checkbox" name="brand" value="Apple" {% if 'Apple' in selected_brands %}checked{% endif %}>
+                            <span>Apple</span>
+                        </label>
+                    </p>
+                    <p>
+                        <label>
+                            <input type="checkbox" name="brand" value="Huawei" {% if 'Huawei' in selected_brands %}checked{% endif %}>
+                            <span>Huawei</span>
+                        </label>
+                    </p>
+                    <p>
+                        <label>
+                            <input type="checkbox" name="brand" value="Xiaomi" {% if 'Xiaomi' in selected_brands %}checked{% endif %}>
+                            <span>Xiaomi</span>
+                        </label>
+                    </p>
 
-    </select>
+                    <h5>Filter by Series</h5>
+                    <p>
+                        <label>
+                            <input type="checkbox" name="series" value="Galaxy M" {% if 'Galaxy M' in selected_series %}checked{% endif %}>
+                            <span>Galaxy M</span>
+                        </label>
+                    </p>
+                    <p>
+                        <label>
+                            <input type="checkbox" name="series" value="Galaxy A" {% if 'Galaxy A' in selected_series %}checked{% endif %}>
+                            <span>Galaxy A</span>
+                        </label>
+                    </p>
+                    <p>
+                        <label>
+                            <input type="checkbox" name="series" value="Galaxy F" {% if 'Galaxy F' in selected_series %}checked{% endif %}>
+                            <span>Galaxy F</span>
+                        </label>
+                    </p>
+                    <p>
+                        <label>
+                            <input type="checkbox" name="series" value="iPhone" {% if 'iPhone' in selected_series %}checked{% endif %}>
+                            <span>iPhone</span>
+                        </label>
+                    </p>
+                    <p>
+                        <label>
+                            <input type="checkbox" name="series" value="Mate" {% if 'Mate' in selected_series %}checked{% endif %}>
+                            <span>Mate</span>
+                        </label>
+                    </p>
+                    <p>
+                        <label>
+                            <input type="checkbox" name="series" value="P Series" {% if 'P Series' in selected_series %}checked{% endif %}>
+                            <span>P Series</span>
+                        </label>
+                    </p>
+                    <p>
+                        <label>
+                            <input type="checkbox" name="series" value="Redmi" {% if 'Redmi' in selected_series %}checked{% endif %}>
+                            <span>Redmi</span>
+                        </label>
+                    </p>
+                    <p>
+                        <label>
+                            <input type="checkbox" name="series" value="Mi" {% if 'Mi' in selected_series %}checked{% endif %}>
+                            <span>Mi</span>
+                        </label>
+                    </p>
 
+                    <h5>Filter by Product Type</h5>
+                    <p>
+                        <label>
+                            <input type="checkbox" name="type" value="Phone" {% if 'Phone' in selected_types %}checked{% endif %}>
+                            <span>Phone</span>
+                        </label>
+                    </p>
+                    <p>
+                        <label>
+                            <input type="checkbox" name="type" value="Tablet" {% if 'Tablet' in selected_types %}checked{% endif %}>
+                            <span>Tablet</span>
+                        </label>
+                    </p>
+                    <p>
+                        <label>
+                            <input type="checkbox" name="type" value="Watch" {% if 'Watch' in selected_types %}checked{% endif %}>
+                            <span>Watch</span>
+                        </label>
+                    </p>
 
-  </div>
+                    <button type="submit" class="btn">Apply Filter</button>
+                </form>
+            </div>
 
-  <!-- Right Product Grid -->
-  <div class="product-grid">
-    <div class="product-container">
-      <!-- Product 1 -->
-      <div class="product-card">
-        <img src="{% static 'images/iphone.jpg' %}" alt="iPhone 16 Pro Max" class="product-image">
-        <div class="product-name">Apple iPhone 16 Pro Max 5G 1TB</div>
-        <div class="product-price">1774.00 €</div>
-      </div>
-
-      <!-- Product 2 -->
-      <div class="product-card">
-        <img src="{% static 'images/iphone.jpg' %}" alt="iPhone 16 Pro Max" class="product-image">
-        <div class="product-name">Apple iPhone 16 Pro 5G 1TB</div>
-        <div class="product-price">1657.00 €</div>
-      </div>
-
-      <!-- Product 3 -->
-      <div class="product-card">
-        <img src="{% static 'images/iphone.jpg' %}" alt="iPhone 16 Pro Max" class="product-image">
-        <div class="product-name">Apple iPhone 16 Pro Max 5G 512GB</div>
-        <div class="product-price">1549.00 €</div>
-      </div>
-
-
-      <div class="product-card">
-        <img src="{% static 'images/iphone.jpg' %}" alt="iPhone 16 Pro Max" class="product-image">
-        <div class="product-name">Apple iPhone 16 Pro Max 5G 1TB</div>
-        <div class="product-price">1774.00 €</div>
-      </div>
-
-      <!-- Product 2 -->
-      <div class="product-card">
-        <img src="{% static 'images/iphone.jpg' %}" alt="iPhone 16 Pro Max" class="product-image">
-        <div class="product-name">Apple iPhone 16 Pro 5G 1TB</div>
-        <div class="product-price">1657.00 €</div>
-      </div>
-
-      <!-- Product 3 -->
-      <div class="product-card">
-        <img src="{% static 'images/iphone.jpg' %}" alt="iPhone 16 Pro Max" class="product-image">
-        <div class="product-name">Apple iPhone 16 Pro Max 5G 512GB</div>
-        <div class="product-price">1549.00 €</div>
-      </div>
-
-
-      <div class="product-card">
-        <img src="{% static 'images/iphone.jpg' %}" alt="iPhone 16 Pro Max" class="product-image">
-        <div class="product-name">Apple iPhone 16 Pro Max 5G 1TB</div>
-        <div class="product-price">1774.00 €</div>
-      </div>
-
-      <!-- Product 2 -->
-      <div class="product-card">
-        <img src="{% static 'images/iphone.jpg' %}" alt="iPhone 16 Pro Max" class="product-image">
-        <div class="product-name">Apple iPhone 16 Pro 5G 1TB</div>
-        <div class="product-price">1657.00 €</div>
-      </div>
-
-      <!-- Product 3 -->
-      <div class="product-card">
-        <img src="{% static 'images/iphone.jpg' %}" alt="iPhone 16 Pro Max" class="product-image">
-        <div class="product-name">Apple iPhone 16 Pro Max 5G 512GB</div>
-        <div class="product-price">1549.00 €</div>
-      </div>
-
-      <!-- Add more products as needed -->
+            <!-- Product List -->
+            <div class="col s12 m9">
+                <h3 class="center">Products</h3>
+                <div class="row">
+                    {% for product in products %}
+                        <div class="col s12 m6 l4">
+                            <div class="card">
+                                <div class="card-image">
+                                    <img src="{{ product.image_url }}" alt="{{ product.name }}" style="width: 80px; height: auto;">
+                                </div>
+                                <div class="card-content">
+                                    <span class="card-title" style="font-size: 1rem;">{{ product.name }}</span>
+                                    <p><strong>Brand:</strong> {{ product.brand }}</p>
+                                    <p><strong>Series:</strong> {{ product.series }}</p>
+                                    <p><strong>Type:</strong> {{ product.type }}</p>
+                                </div>
+                                <div class="card-action">
+                                    <a href="{{ product.link }}" target="_blank">View on GSM Arena</a>
+                                </div>
+                            </div>
+                        </div>
+                    {% empty %}
+                        <p class="center">No products found. Please check the scraper.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
     </div>
-  </div>
-</div>
 {% endblock %}
