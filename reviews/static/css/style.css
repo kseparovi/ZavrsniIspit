@@ -20,11 +20,27 @@ p {
 }
 
 .parallax-container {
-    min-height: 380px;
-    line-height: 0;
-    height: auto;
-    color: rgba(255, 255, 255, .9);
+    position: relative;
+    overflow: hidden;
+    height: 500px;
 }
+
+.parallax-container .parallax img {
+    opacity: 0;
+    position: absolute;
+    left: 50%;
+    bottom: 0;
+    min-width: 100%;
+    min-height: 100%;
+    transform: translateX(-50%);
+}
+
+.parallax-container .parallax img {
+    opacity: 1 !important;
+}
+
+
+
 
 .parallax-container .section {
     width: 100%;
@@ -134,3 +150,5 @@ footer.page-footer {
     font-weight: bold;
     color: #007BFF;
 }
+
+

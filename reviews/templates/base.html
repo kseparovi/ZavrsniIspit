@@ -9,22 +9,24 @@
 
     <!-- CSS -->
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link href="{% static 'css/materialize.css' %}" type="text/css" rel="stylesheet" media="screen,projection"/>
-    <link href="{% static 'css/style.css' %}" type="text/css" rel="stylesheet" media="screen,projection"/>
+    <link href="{% static 'css/materialize.css' %}" rel="stylesheet">
+    <link href="{% static 'css/style.css' %}" rel="stylesheet"> <!-- Custom CSS must come last! -->
+
 </head>
 <body>
 
 <!-- Navigation Bar -->
 <nav class="white" role="navigation">
     <div class="nav-wrapper container">
-        <!-- Logo -->
-        <a id="logo-container" href="{% url 'reviews:home' %}" class="brand-logo left">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="gold"
-                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polygon
-                        points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-            </svg>
-        </a>
+        <!-- Logo --><a id="logo-container" href="{% url 'reviews:home' %}" class="brand-logo left" style="display: flex; align-items: center;">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="gold"
+         stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polygon
+                points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+    </svg>
+    <span style="font-size: 1.5rem; font-weight: bold; color: black; margin-left: 4px;">RecenzirajMe</span>
+</a>
+
 
         <!-- Navigation Links -->
         <ul class="right hide-on-med-and-down">
@@ -86,17 +88,20 @@
             </div>
         </div>
     </div>
-     <!--<div class="footer-copyright">
-       <div class="container">
-         Made with love by <a class="brown-text text-lighten-3" href="https://www.example.com">Your Company</a>
-       </div>
-     </div>-->
 </footer>
 
 <!-- Scripts -->
 <script src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
 <script src="{% static 'js/materialize.js' %}"></script>
 <script src="{% static 'js/init.js' %}"></script>
+
+<!-- Initialize Materialize Parallax -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var elems = document.querySelectorAll('.parallax');
+        M.Parallax.init(elems);
+    });
+</script>
 
 </body>
 </html>
