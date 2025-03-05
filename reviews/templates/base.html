@@ -31,8 +31,7 @@
         <!-- Navigation Links -->
         <ul class="right hide-on-med-and-down">
             <li><a href="{% url 'reviews:product_list' %}">Products</a></li>
-            <li><a href="#">Top Reviews</a></li>
-            <li><a href="#">Write a Review</a></li>
+
             {% if user.is_authenticated %}
                 <li><a href="{% url 'reviews:logout' %}">Logout</a></li>
             {% else %}

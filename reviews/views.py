@@ -7,6 +7,41 @@ import re
 from bs4 import BeautifulSoup
 from django.http import JsonResponse
 
+
+from django.contrib.auth import authenticate, login as auth_login
+from django.shortcuts import render, redirect
+from django.contrib.auth.forms import AuthenticationForm
+
+from django.shortcuts import render, redirect
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.forms import AuthenticationForm
+
+
+from django.shortcuts import render, redirect
+from django.contrib.auth import authenticate, login as auth_login  # ✅ Rename login import
+from django.contrib.auth.decorators import login_required
+
+def user_login(request):
+    if request.method == "POST":
+        username = request.POST.get("username")
+        password = request.POST.get("password")
+        user = authenticate(request, username=username, password=password)
+
+        if user is not None:
+            auth_login(request, user)  # ✅ Now using Django's built-in login function
+            return redirect("home")  # Redirect to home page after login
+        else:
+            return render(request, "login.html", {"error": "Invalid username or password"})
+
+    return render(request, "login.html")
+
+
+def logout_view(request):
+    """Logout the user and redirect to home page."""
+    logout(request)
+    return redirect("reviews:home")
+
+
 def get_content(url):
     """Fetch page content from the given GSM Arena URL."""
     USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36"
@@ -273,3 +308,15 @@ def product_detail(request):
 
     return JsonResponse(product_data)
 
+
+from django.shortcuts import render
+from .models import Product  # ✅ Ensure you have a Product model
+
+
+def search_results(request):
+    query = request.GET.get("query", "")
+
+    # Filter products based on search query (assuming you have a `name` field in the model)
+    products = Product.objects.filter(name__icontains=query) if query else []
+
+    return render(request, "search_results.html", {"query": query, "products": products})
