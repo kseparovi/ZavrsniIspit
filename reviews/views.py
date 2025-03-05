@@ -3,8 +3,9 @@ import requests
 from django.shortcuts import render, redirect
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import login as auth_login
-from bs4 import BeautifulSoup
 import re
+from bs4 import BeautifulSoup
+from django.http import JsonResponse
 
 def get_content(url):
     """Fetch page content from the given GSM Arena URL."""
@@ -147,3 +148,128 @@ def login(request):
         else:
             return render(request, 'login.html', {'error': 'Invalid credentials'})
     return render(request, 'login.html')
+
+
+def scrape_product_details(url):
+    """Scrape product details, rating, and user comments from GSMArena."""
+    USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+    headers = {"User-Agent": USER_AGENT}
+
+    response = requests.get(url, headers=headers)
+    if response.status_code != 200:
+        return None
+
+    soup = BeautifulSoup(response.text, 'html.parser')
+
+    # ✅ Extract Phone Name
+    title_tag = soup.find('h1', class_='specs-phone-name-title')
+    product_name = title_tag.text.strip() if title_tag else "Unknown"
+
+    # ✅ Extract Brand from Breadcrumbs
+    breadcrumb = soup.find('div', class_='breadcrumb')
+    brand = breadcrumb.find_all('a')[1].text.strip() if breadcrumb and len(breadcrumb.find_all('a')) > 1 else "Unknown"
+
+    # ✅ Extract Series (Infer from Name)
+    series = "Undefined"
+    if "Galaxy A" in product_name:
+        series = "Galaxy A"
+    elif "Galaxy S" in product_name:
+        series = "Galaxy S"
+    elif "iPhone" in product_name:
+        series = "iPhone"
+    elif "Redmi" in product_name:
+        series = "Redmi"
+    elif "Pixel" in product_name:
+        series = "Google Pixel"
+
+    # ✅ Extract Type (Based on Known Categories)
+    if "Fold" in product_name or "Flip" in product_name:
+        phone_type = "Foldable"
+    elif "Gaming" in product_name:
+        phone_type = "Gaming Phone"
+    else:
+        phone_type = "Smartphone"
+
+    # ✅ Extract Rating (Popularity %)
+    rating_tag = soup.find('strong', class_='accent')
+    rating = rating_tag.text.strip() if rating_tag else "No rating"
+
+    # ✅ Extract Key Specs
+    specs_list = []
+    specs_div = soup.find('ul', class_='specs-spotlight-features')
+    if specs_div:
+        specs_items = specs_div.find_all('span', {'data-spec': True})
+        for item in specs_items:
+            specs_list.append(item.text.strip())
+
+    specs_text = ", ".join(specs_list) if specs_list else "No specs found"
+
+    # ✅ Extract User Comments
+    comments = []
+    comments_section = soup.find('div', id='user-comments')
+
+    if comments_section:
+        comment_threads = comments_section.find_all('div', class_='user-thread')
+        for thread in comment_threads:  # ✅ Capture all available comments
+            user = thread.find('li', class_='uname')
+            username = user.text.strip() if user else "Anonymous"
+
+            comment = thread.find('p', class_='uopin')
+            comment_text = comment.text.strip() if comment else "No comment"
+
+            comments.append({"username": username, "comment": comment_text})
+
+    # ✅ Get More Comments from "Read all opinions" Page
+    more_comments_link = comments_section.find('a', href=True, text="Read all opinions") if comments_section else None
+    if more_comments_link:
+        full_comments_url = f"https://www.gsmarena.com/{more_comments_link['href']}"
+        try:
+            more_comments_response = requests.get(full_comments_url, headers=headers)
+            if more_comments_response.status_code == 200:
+                more_soup = BeautifulSoup(more_comments_response.text, 'html.parser')
+                extra_comment_threads = more_soup.find_all('div', class_='user-thread')
+
+                for thread in extra_comment_threads[:10]:  # ✅ Get 10 additional comments
+                    user = thread.find('li', class_='uname')
+                    username = user.text.strip() if user else "Anonymous"
+
+                    comment = thread.find('p', class_='uopin')
+                    comment_text = comment.text.strip() if comment else "No comment"
+
+                    comments.append({"username": username, "comment": comment_text})
+        except Exception as e:
+            print(f"Error fetching additional comments: {e}")
+
+    # Debugging output to verify extraction
+    print(f"Scraped Data for {url}:")
+    print(f"Product Name: {product_name}")
+    print(f"Brand: {brand}")
+    print(f"Series: {series}")
+    print(f"Type: {phone_type}")
+    print(f"Rating: {rating}")
+    print(f"Specs: {specs_text}")
+    print(f"Total Comments: {len(comments)}")
+
+    return {
+        "name": product_name,
+        "brand": brand,
+        "series": series,
+        "type": phone_type,
+        "rating": rating,
+        "specs": specs_text,
+        "comments": comments
+    }
+
+
+def product_detail(request):
+    """Django view to fetch product details dynamically."""
+    product_url = request.GET.get('url')
+    if not product_url:
+        return JsonResponse({"error": "No URL provided"}, status=400)
+
+    product_data = scrape_product_details(product_url)
+    if not product_data:
+        return JsonResponse({"error": "Failed to fetch product details"}, status=500)
+
+    return JsonResponse(product_data)
+
