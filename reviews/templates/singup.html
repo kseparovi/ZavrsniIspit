@@ -1,49 +1,29 @@
 {% extends "base.html" %}
 
-{% block title %}Sign Up | Product Reviews{% endblock %}
-
 {% block content %}
-<div class="container" style="margin-top: 100px;">
-  <div class="row">
-    <div class="col s12 m6 offset-m3">
-      <div class="card">
-        <div class="card-content">
-          <span class="card-title center-align">Sign Up</span>
-
-          {% if error %}
-            <p class="error" style="color: red; text-align: center;">{{ error }}</p>
-          {% endif %}
-
-          <form method="post" action="{% url 'reviews:signup' %}">
-            {% csrf_token %}
-            <!-- Username -->
-            <div class="input-field">
-              <input id="username" name="username" type="text" class="validate" required>
-              <label for="username">Username</label>
+<div class="container">
+    <h3 class="center">Sign Up</h3>
+    <form method="post">
+        {% csrf_token %}
+        <div class="row">
+            <div class="input-field col s12">
+                {{ form.username.label_tag }}
+                {{ form.username }}
             </div>
-
-            <!-- Password -->
-            <div class="input-field">
-              <input id="password1" name="password1" type="password" class="validate" required>
-              <label for="password1">Password</label>
+            <div class="input-field col s12">
+                {{ form.email.label_tag }}
+                {{ form.email }}
             </div>
-
-            <!-- Confirm Password -->
-            <div class="input-field">
-              <input id="password2" name="password2" type="password" class="validate" required>
-              <label for="password2">Confirm Password</label>
+            <div class="input-field col s12">
+                {{ form.password1.label_tag }}
+                {{ form.password1 }}
             </div>
-
-            <!-- Submit Button -->
-            <div class="center-align">
-              <button class="btn waves-effect waves-light" type="submit" name="action">Sign Up
-                <i class="material-icons right">person_add</i>
-              </button>
+            <div class="input-field col s12">
+                {{ form.password2.label_tag }}
+                {{ form.password2 }}
             </div>
-          </form>
         </div>
-      </div>
-    </div>
-  </div>
+        <button type="submit" class="btn waves-effect waves-light">Sign Up</button>
+    </form>
 </div>
 {% endblock %}

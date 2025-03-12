@@ -15,6 +15,11 @@ from django.contrib.auth.forms import AuthenticationForm
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.forms import AuthenticationForm
+from django.shortcuts import render, redirect
+from django.contrib.auth import login
+from django.contrib.auth.models import User
+from .forms import SignUpForm
+
 
 
 from django.shortcuts import render, redirect
@@ -40,6 +45,35 @@ def logout_view(request):
     """Logout the user and redirect to home page."""
     logout(request)
     return redirect("reviews:home")
+
+
+from django.contrib.auth.forms import UserCreationForm
+from django.shortcuts import render, redirect
+from django.contrib.auth import login
+from django.contrib.auth.models import User
+
+def user_signup(request):
+    if request.method == "POST":
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)
+            return redirect("reviews:home")  # Redirect to home after signup
+    else:
+        form = UserCreationForm()
+    return render(request, "signup.html", {"form": form})
+
+def signup(request):
+    if request.method == "POST":
+        form = SignUpForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)  # Log the user in after signup
+            return redirect("home")  # Redirect to home page after signup
+    else:
+        form = SignUpForm()
+
+    return render(request, "signup.html", {"form": form})
 
 
 def get_content(url):

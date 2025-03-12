@@ -1,6 +1,11 @@
 from django.contrib import admin
 from .models import Product, Review, Comment, ReviewRating, Comparison, UserProfile
 
+
+
+from django.contrib import admin
+from django.contrib.auth.models import User
+
 class ReviewInline(admin.TabularInline):
     model = Review
     extra = 0
