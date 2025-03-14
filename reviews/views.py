@@ -115,6 +115,8 @@ def extract_product_type(product_name):
             return category
     return "Other"
 
+import time  # Add this import at the top of views.py
+
 def scrape_products():
     """Scrape products from GSM Arena's desktop site for Samsung, Apple, Huawei, and Xiaomi."""
     product_info_list = []
@@ -125,6 +127,7 @@ def scrape_products():
         "Xiaomi": "https://www.gsmarena.com/xiaomi-phones-80.php"
     }
     for brand, url in urls.items():
+        time.sleep(1)  # ✅ Wait 3 seconds before each request to prevent rate limiting
         html_content = get_content(url)
         if not html_content:
             continue
@@ -132,7 +135,6 @@ def scrape_products():
         product_list_div = soup.find('div', class_='makers')
         if not product_list_div:
             print(f"Error: Could not find product list for {brand}")
-            print(f"Fetched HTML Preview: {soup.prettify()[:500]}")
             continue
         product_items = product_list_div.find_all('li')
         for item in product_items:
@@ -154,6 +156,7 @@ def scrape_products():
                     'type': product_type
                 })
     return product_info_list
+
 
 def products(request):
     """Display products with brand, series, and product type filtering."""
@@ -217,130 +220,78 @@ def login(request):
         else:
             return render(request, 'login.html', {'error': 'Invalid credentials'})
     return render(request, 'login.html')
-
-
 def scrape_product_details(url):
-    """Scrape product details, rating, and user comments from GSMArena."""
-    USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-    headers = {"User-Agent": USER_AGENT}
-
-    response = requests.get(url, headers=headers)
+    """Scrape product details including AI sentiment rating."""
+    response = requests.get(url)
     if response.status_code != 200:
         return None
 
     soup = BeautifulSoup(response.text, 'html.parser')
 
-    # ✅ Extract Phone Name
-    title_tag = soup.find('h1', class_='specs-phone-name-title')
-    product_name = title_tag.text.strip() if title_tag else "Unknown"
+    product_name = soup.find('h1', class_='specs-phone-name-title')
+    product_name = product_name.text.strip() if product_name else "Unknown"
 
-    # ✅ Extract Brand from Breadcrumbs
-    breadcrumb = soup.find('div', class_='breadcrumb')
-    brand = breadcrumb.find_all('a')[1].text.strip() if breadcrumb and len(breadcrumb.find_all('a')) > 1 else "Unknown"
+    brand_tag = soup.find('td', {'data-spec': 'brand'})
+    brand = brand_tag.text.strip() if brand_tag else "Unknown"
 
-    # ✅ Extract Series (Infer from Name)
-    series = "Undefined"
-    if "Galaxy A" in product_name:
-        series = "Galaxy A"
-    elif "Galaxy S" in product_name:
-        series = "Galaxy S"
-    elif "iPhone" in product_name:
-        series = "iPhone"
-    elif "Redmi" in product_name:
-        series = "Redmi"
-    elif "Pixel" in product_name:
-        series = "Google Pixel"
+    series_tag = soup.find('td', {'data-spec': 'series'})
+    series = series_tag.text.strip() if series_tag else "Unknown"
 
-    # ✅ Extract Type (Based on Known Categories)
-    if "Fold" in product_name or "Flip" in product_name:
-        phone_type = "Foldable"
-    elif "Gaming" in product_name:
-        phone_type = "Gaming Phone"
-    else:
-        phone_type = "Smartphone"
+    type_tag = soup.find('td', {'data-spec': 'type'})
+    type_ = type_tag.text.strip() if type_tag else "Unknown"
 
-    # ✅ Extract Rating (Popularity %)
     rating_tag = soup.find('strong', class_='accent')
     rating = rating_tag.text.strip() if rating_tag else "No rating"
 
-    # ✅ Extract Key Specs
-    specs_list = []
-    specs_div = soup.find('ul', class_='specs-spotlight-features')
-    if specs_div:
-        specs_items = specs_div.find_all('span', {'data-spec': True})
-        for item in specs_items:
-            specs_list.append(item.text.strip())
+    specs_tag = soup.find('div', class_='specs-list')
+    specs = specs_tag.text.strip() if specs_tag else "No specs available"
 
-    specs_text = ", ".join(specs_list) if specs_list else "No specs found"
-
-    # ✅ Extract User Comments
+    # Extract user comments (Fix this part)
     comments = []
     comments_section = soup.find('div', id='user-comments')
-
     if comments_section:
-        comment_threads = comments_section.find_all('div', class_='user-thread')
-        for thread in comment_threads:  # ✅ Capture all available comments
-            user = thread.find('li', class_='uname')
-            username = user.text.strip() if user else "Anonymous"
+        for thread in comments_section.find_all('div', class_='user-thread'):
+            username_tag = thread.find('li', class_='uname')
+            username = username_tag.text.strip() if username_tag else "Anonymous"
 
-            comment = thread.find('p', class_='uopin')
-            comment_text = comment.text.strip() if comment else "No comment"
+            comment_text_tag = thread.find('p', class_='uopin')
+            comment_text = comment_text_tag.text.strip() if comment_text_tag else "No comment provided"
 
+            # Append extracted comment
             comments.append({"username": username, "comment": comment_text})
 
-    # ✅ Get More Comments from "Read all opinions" Page
-    more_comments_link = comments_section.find('a', href=True, text="Read all opinions") if comments_section else None
-    if more_comments_link:
-        full_comments_url = f"https://www.gsmarena.com/{more_comments_link['href']}"
-        try:
-            more_comments_response = requests.get(full_comments_url, headers=headers)
-            if more_comments_response.status_code == 200:
-                more_soup = BeautifulSoup(more_comments_response.text, 'html.parser')
-                extra_comment_threads = more_soup.find_all('div', class_='user-thread')
+    # Debugging: Print extracted comments
+    print(f"Scraped {len(comments)} reviews for {product_name}")
 
-                for thread in extra_comment_threads[:10]:  # ✅ Get 10 additional comments
-                    user = thread.find('li', class_='uname')
-                    username = user.text.strip() if user else "Anonymous"
-
-                    comment = thread.find('p', class_='uopin')
-                    comment_text = comment.text.strip() if comment else "No comment"
-
-                    comments.append({"username": username, "comment": comment_text})
-        except Exception as e:
-            print(f"Error fetching additional comments: {e}")
-
-    # Debugging output to verify extraction
-    print(f"Scraped Data for {url}:")
-    print(f"Product Name: {product_name}")
-    print(f"Brand: {brand}")
-    print(f"Series: {series}")
-    print(f"Type: {phone_type}")
-    print(f"Rating: {rating}")
-    print(f"Specs: {specs_text}")
-    print(f"Total Comments: {len(comments)}")
+    ai_rating = analyze_sentiment(comments)  # ✅ AI rating calculation
 
     return {
         "name": product_name,
         "brand": brand,
         "series": series,
-        "type": phone_type,
+        "type": type_,
         "rating": rating,
-        "specs": specs_text,
-        "comments": comments
+        "specs": specs,
+        "ai_rating": ai_rating,
+        "comments": comments  # ✅ Ensure all comments are returned
     }
 
 
 def product_detail(request):
-    """Django view to fetch product details dynamically."""
-    product_url = request.GET.get('url')
+    """Fetch and return product details including AI rating."""
+    product_url = request.GET.get("url", None)
     if not product_url:
-        return JsonResponse({"error": "No URL provided"}, status=400)
+        return JsonResponse({"error": "Product URL is missing"}, status=400)
 
-    product_data = scrape_product_details(product_url)
-    if not product_data:
-        return JsonResponse({"error": "Failed to fetch product details"}, status=500)
+    try:
+        product_data = scrape_product_details(product_url)
+        if not product_data:
+            return JsonResponse({"error": "Failed to scrape product details"}, status=500)
 
-    return JsonResponse(product_data)
+        return JsonResponse(product_data)
+
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
 
 
 from django.shortcuts import render
@@ -354,3 +305,24 @@ def search_results(request):
     products = Product.objects.filter(name__icontains=query) if query else []
 
     return render(request, "search_results.html", {"query": query, "products": products})
+
+
+
+from textblob import TextBlob
+
+def analyze_sentiment(comments):
+    """Analyze user reviews and return a rating from 0 to 5."""
+    total_score = 0
+    count = 0
+
+    for comment in comments:
+        sentiment = TextBlob(comment["comment"]).sentiment.polarity  # Get sentiment score (-1 to 1)
+        rating = round((sentiment + 1) * 2.5, 1)  # Convert polarity (-1 to 1) into a 0-5 scale
+
+        total_score += rating
+        count += 1
+
+    if count == 0:
+        return 2.5  # Neutral rating if no comments
+
+    return round(total_score / count, 1)  # Average rating rounded to 1 decimal

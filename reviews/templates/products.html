@@ -78,6 +78,7 @@
             <p id="modalContent">Loading...</p>
 
             <h5>User Reviews</h5>
+            <p><strong>AI-Based Rating:</strong> ⭐ <span id="aiRating">Loading...</span> / 5</p>
             <div id="modalCommentsContainer" style="max-height: 250px; overflow-y: auto; padding: 10px; background-color: #f8f9fa; border-radius: 8px;">
                 <ul id="modalComments" style="list-style-type: none; padding-left: 0;">
                     <li style="color: gray;">Loading...</li>
@@ -91,47 +92,55 @@
 
     <!-- JavaScript Section -->
     <script>
-        function fetchProductDetails(productUrl) {
-            fetch(`/reviews/product-detail/?url=${encodeURIComponent(productUrl)}`)
-                .then(response => response.json())
-                .then(data => {
-                    document.getElementById('modalTitle').innerText = data.name;
-                    document.getElementById('modalContent').innerHTML = `
-                        <p><strong>Series:</strong> ${data.series}</p>
-                        <p><strong>Type:</strong> ${data.type}</p>
-                        <p><strong>Rating:</strong> ${data.rating}</p>
-                        <p><strong>Specs:</strong> ${data.specs}</p>
+      function fetchProductDetails(productUrl) {
+    fetch(`/reviews/product-detail/?url=${encodeURIComponent(productUrl)}`)
+        .then(response => response.json())
+        .then(data => {
+            console.log("Fetched Product Details:", data); // ✅ Debugging
+
+            if (data.error) {
+                alert(data.error);
+                return;
+            }
+
+            document.getElementById('modalTitle').innerText = data.name;
+            document.getElementById('modalContent').innerHTML = `
+                <p><strong>Series:</strong> ${data.series}</p>
+                <p><strong>Type:</strong> ${data.type}</p>
+                <p><strong>Rating:</strong> ${data.rating}</p>
+                <p><strong>Specs:</strong> ${data.specs}</p>
+                <p><strong>AI-Based Rating:</strong> ⭐ ${data.ai_rating} / 5</p>
+            `;
+
+            // ✅ Ensure all comments are displayed
+            let commentsList = document.getElementById('modalComments');
+            commentsList.innerHTML = ""; // Clear previous comments
+
+            if (data.comments && data.comments.length > 0) {
+                data.comments.forEach(comment => {
+                    let listItem = document.createElement("li");
+                    listItem.style.padding = "12px";
+                    listItem.style.marginBottom = "8px";
+                    listItem.style.borderRadius = "6px";
+                    listItem.style.backgroundColor = "#fff";
+                    listItem.style.boxShadow = "0px 2px 4px rgba(0,0,0,0.1)";
+
+                    listItem.innerHTML = `
+                        <p style="margin: 0; font-weight: bold; color: #007bff;">${comment.username}</p>
+                        <p style="margin: 5px 0; color: #333;">${comment.comment}</p>
                     `;
+                    commentsList.appendChild(listItem);
+                });
+            } else {
+                commentsList.innerHTML = "<li style='color: gray;'>No user reviews yet.</li>";
+            }
 
-                    // Populate User Comments
-                    let commentsList = document.getElementById('modalComments');
-                    commentsList.innerHTML = ""; // Clear previous comments
+            var modal = document.getElementById('productModal');
+            var instance = M.Modal.init(modal);
+            instance.open();
+        })
+        .catch(error => console.error('Error fetching product details:', error));
+}
 
-                    if (data.comments && data.comments.length > 0) {
-                        data.comments.forEach(comment => {
-                            let listItem = document.createElement("li");
-                            listItem.style.padding = "12px";
-                            listItem.style.marginBottom = "8px";
-                            listItem.style.borderRadius = "6px";
-                            listItem.style.backgroundColor = "#fff";
-                            listItem.style.boxShadow = "0px 2px 4px rgba(0,0,0,0.1)";
-
-                            listItem.innerHTML = `
-                                <p style="margin: 0; font-weight: bold; color: #007bff;">${comment.username}</p>
-                                <p style="margin: 5px 0; color: #333;">${comment.comment}</p>
-                            `;
-                            commentsList.appendChild(listItem);
-                        });
-                    } else {
-                        commentsList.innerHTML = "<li style='color: gray;'>No user reviews yet.</li>";
-                    }
-
-                    // Initialize and open modal
-                    var modal = document.getElementById('productModal');
-                    var instance = M.Modal.init(modal);
-                    instance.open();
-                })
-                .catch(error => console.error('Error fetching product details:', error));
-        }
     </script>
 {% endblock %}
