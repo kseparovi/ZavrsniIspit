@@ -3,13 +3,30 @@ from django.contrib.auth.models import User
 
 class Product(models.Model):
     name = models.CharField(max_length=255)
-    image_url = models.URLField()
-    product_link = models.URLField()
-    category = models.CharField(max_length=255, blank=True, null=True)
-    price = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    brand = models.CharField(max_length=255, blank=True, null=True)
+    series = models.CharField(max_length=255, blank=True, null=True)
+    type = models.CharField(max_length=255, blank=True, null=True)
+    image_url = models.URLField(blank=True, null=True)
+    product_link = models.URLField(blank=True, null=True)
 
     def __str__(self):
         return self.name
+
+
+class ProductReview(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    username = models.CharField(max_length=255, default="Anonymous")
+    comment = models.TextField()
+
+    def __str__(self):
+        return f"Review by {self.username}"
+
+# templates/products.html and home.html - already configured correctly based on your upload.
+
+# How to test:
+# - Ensure your scraping logic saves product details to Product model.
+# - Search bar autocomplete will suggest products from Product model.
+# - On search submission, redirect to the detailed product page with reviews.
 
 class Review(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)

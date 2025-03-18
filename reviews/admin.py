@@ -12,9 +12,8 @@ class ReviewInline(admin.TabularInline):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ('name', 'category', 'price', 'image_url', 'product_link', 'get_average_rating')
-    list_filter = ('category',)
-    search_fields = ('name', 'category')
+    list_display = ('name', 'image_url', 'product_link', 'get_average_rating')
+    search_fields = ('name',)
     inlines = [ReviewInline]
     list_per_page = 25
 
@@ -39,16 +38,7 @@ class CommentAdmin(admin.ModelAdmin):
     search_fields = ('review__title', 'user__username', 'content')
     list_filter = ('created_at',)
 
-@admin.register(ReviewRating)
-class ReviewRatingAdmin(admin.ModelAdmin):
-    list_display = ('review', 'user', 'is_helpful', 'created_at')
-    search_fields = ('review__title', 'user__username')
-    list_filter = ('is_helpful', 'created_at')
 
-@admin.register(Comparison)
-class ComparisonAdmin(admin.ModelAdmin):
-    list_display = ('user', 'created_at')
-    filter_horizontal = ('products',)
 
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):

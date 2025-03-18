@@ -1,30 +1,13 @@
-from django.contrib.auth import authenticate
+import time
+
 import requests
-from django.shortcuts import render, redirect
-from django.contrib.auth.forms import UserCreationForm
-from django.contrib.auth import login as auth_login
 import re
 from bs4 import BeautifulSoup
-from django.http import JsonResponse
-
-
-from django.contrib.auth import authenticate, login as auth_login
-from django.shortcuts import render, redirect
-from django.contrib.auth.forms import AuthenticationForm
-
-from django.shortcuts import render, redirect
+import random  # Add
 from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.forms import AuthenticationForm
-from django.shortcuts import render, redirect
-from django.contrib.auth import login
-from django.contrib.auth.models import User
 from .forms import SignUpForm
-
-
-
-from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login as auth_login  # ✅ Rename login import
-from django.contrib.auth.decorators import login_required
+
 
 def user_login(request):
     if request.method == "POST":
@@ -75,13 +58,25 @@ def signup(request):
 
     return render(request, "signup.html", {"form": form})
 
+import random
+import time
+import re
+import requests
+from bs4 import BeautifulSoup
+from django.shortcuts import render, redirect, get_object_or_404
+from django.http import JsonResponse
+from .models import Product, ProductReview
 
 def get_content(url):
     """Fetch page content from the given GSM Arena URL."""
-    USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.157 Safari/537.36"
+    USER_AGENTS = [
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36"
+    ]
     session = requests.Session()
     session.headers.update({
-        'User-Agent': USER_AGENT
+        'User-Agent': random.choice(USER_AGENTS)
     })
     response = session.get(url)
     if response.status_code == 200:
@@ -93,11 +88,11 @@ def get_content(url):
 def extract_series(product_name, brand):
     """Extract the product series based on the brand and model name."""
     series_patterns = {
-        "Samsung": r"Galaxy (M|A|F|S|Z|Note|X)\d+",
-        "Apple": r"iPhone \d+|iPhone [A-Z]+",
-        "Huawei": r"Mate \d+|P\d+",
-        "Xiaomi": r"Redmi \d+|Mi \d+|Poco \w+",
-        "Other": r"\b(Watch|Tablet|Laptop)\b"
+        "Samsung": r"Galaxy (M|A|F|S|Z|Note|X)\\d+",
+        "Apple": r"iPhone \\d+|iPhone [A-Z]+",
+        "Huawei": r"Mate \\d+|P\\d+",
+        "Xiaomi": r"Redmi \\d+|Mi \\d+|Poco \\w+",
+        "Other": r"\\b(Watch|Tablet|Laptop)\\b"
     }
     pattern = series_patterns.get(brand, "")
     match = re.search(pattern, product_name)
@@ -106,7 +101,7 @@ def extract_series(product_name, brand):
 def extract_product_type(product_name):
     """Categorize product as Phone, Tablet, Laptop, or Other."""
     product_patterns = {
-        "Phone": r"(iPhone|Galaxy|Redmi|Mate|P)\s*\d+",
+        "Phone": r"(iPhone|Galaxy|Redmi|Mate|P)\\s*\\d+",
         "Tablet": r"(iPad|Tab|MatePad)",
         "Laptop": r"(MacBook|MateBook|Mi Notebook)"
     }
@@ -115,10 +110,8 @@ def extract_product_type(product_name):
             return category
     return "Other"
 
-import time  # Add this import at the top of views.py
-
 def scrape_products():
-    """Scrape products from GSM Arena's desktop site for Samsung, Apple, Huawei, and Xiaomi."""
+    """Scrape products from GSM Arena for Samsung, Apple, Huawei, Xiaomi."""
     product_info_list = []
     urls = {
         "Samsung": "https://www.gsmarena.com/samsung-phones-9.php",
@@ -127,7 +120,8 @@ def scrape_products():
         "Xiaomi": "https://www.gsmarena.com/xiaomi-phones-80.php"
     }
     for brand, url in urls.items():
-        time.sleep(1)  # ✅ Wait 3 seconds before each request to prevent rate limiting
+        print(f"Fetching {brand} page...")
+
         html_content = get_content(url)
         if not html_content:
             continue
@@ -159,34 +153,30 @@ def scrape_products():
 
 
 def products(request):
-    """Display products with brand, series, and product type filtering."""
-    product_info_list = scrape_products()
     selected_brands = request.GET.getlist('brand')
     selected_series = request.GET.getlist('series')
     selected_types = request.GET.getlist('type')
 
-    print("Selected Brands:", selected_brands)
-    print("Selected Series:", selected_series)
-    print("Selected Types:", selected_types)
-    print("Total Products Before Filtering:", len(product_info_list))
+    products = Product.objects.all().order_by('name')  # Alphabetical order
+
 
     if selected_brands:
-        product_info_list = [p for p in product_info_list if p['brand'] in selected_brands]
+        products = products.filter(brand__in=selected_brands)
     if selected_series:
-        product_info_list = [p for p in product_info_list if any(series in p['series'] for series in selected_series)]
+        products = products.filter(series__in=selected_series)
     if selected_types:
-        product_info_list = [p for p in product_info_list if p['type'] in selected_types]
+        products = products.filter(type__in=selected_types)
 
-    print("Filtered Products Count:", len(product_info_list))  # Debugging
-    print("Filtered Products:", product_info_list[:5])  # Show first 5 products
-
-    return render(request, 'products.html', {
-        'products': product_info_list,
+    context = {
+        'products': products,
+        'brands': Product.objects.values_list('brand', flat=True).distinct(),
+        'series': Product.objects.values_list('series', flat=True).distinct(),
+        'types': Product.objects.values_list('type', flat=True).distinct(),
         'selected_brands': selected_brands,
         'selected_series': selected_series,
-        'selected_types': selected_types
-    })
-
+        'selected_types': selected_types,
+    }
+    return render(request, 'products.html', context)
 
 def index(request):
     """Render home page."""
@@ -220,6 +210,7 @@ def login(request):
         else:
             return render(request, 'login.html', {'error': 'Invalid credentials'})
     return render(request, 'login.html')
+
 def scrape_product_details(url):
     """Scrape product details including AI sentiment rating."""
     response = requests.get(url)
@@ -275,27 +266,16 @@ def scrape_product_details(url):
         "ai_rating": ai_rating,
         "comments": comments  # ✅ Ensure all comments are returned
     }
+def product_detail(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
+    reviews = ProductReview.objects.filter(product=product)
+    return render(request, 'product_detail.html', {'product': product, 'reviews': reviews})
 
-
-def product_detail(request):
-    """Fetch and return product details including AI rating."""
-    product_url = request.GET.get("url", None)
-    if not product_url:
-        return JsonResponse({"error": "Product URL is missing"}, status=400)
-
-    try:
-        product_data = scrape_product_details(product_url)
-        if not product_data:
-            return JsonResponse({"error": "Failed to scrape product details"}, status=500)
-
-        return JsonResponse(product_data)
-
-    except Exception as e:
-        return JsonResponse({"error": str(e)}, status=500)
 
 
 from django.shortcuts import render
 from .models import Product  # ✅ Ensure you have a Product model
+
 
 
 def search_results(request):
@@ -326,3 +306,64 @@ def analyze_sentiment(comments):
         return 2.5  # Neutral rating if no comments
 
     return round(total_score / count, 1)  # Average rating rounded to 1 decimal
+
+
+
+
+from django.shortcuts import render, redirect, get_object_or_404
+from .models import Product
+
+def search_results(request):
+    query = request.GET.get('query', '').strip()
+    product = Product.objects.filter(name__iexact=query).first()
+
+    if product:
+        # Redirect to the detail page by product_id
+        return redirect('reviews:product_detail', product_id=product.id)
+    else:
+        return render(request, 'home.html', {'error_message': 'Product not found!'})
+
+
+
+from django.views.decorators.http import require_GET
+
+@require_GET
+def autocomplete(request):
+    query = request.GET.get('query', '').strip()
+    matching_products = Product.objects.filter(name__icontains=query).values_list('name', flat=True)
+    return JsonResponse(list(matching_products), safe=False)
+
+
+
+from django.http import JsonResponse
+from .models import Product, ProductReview
+
+def product_detail_ajax(request):
+    product_url = request.GET.get('url')
+    product = Product.objects.filter(product_link=product_url).first()
+
+    if not product:
+        return JsonResponse({'error': 'Product not found!'}, status=404)
+
+    # Optional: Fetch product reviews
+    reviews = ProductReview.objects.filter(product=product)
+
+    # Prepare reviews/comments list
+    comments = [{'username': review.username, 'comment': review.comment} for review in reviews]
+
+    data = {
+        'name': product.name,
+        'brand': product.brand,
+        'series': product.series,
+        'type': product.type,
+        'rating': 'N/A',  # You can calculate avg rating here
+        'specs': 'Specs info if you want to add',
+        'ai_rating': '4.5',  # Placeholder AI rating
+        'comments': comments
+    }
+
+    return JsonResponse(data)
+
+
+
+

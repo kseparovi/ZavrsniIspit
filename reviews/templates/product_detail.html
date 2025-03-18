@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ product.name }} - Product Details{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h2>{{ product.name }}</h2>
+    <img src="{{ product.image_url }}" alt="{{ product.name }}" style="width:200px; height:auto;">
+    <p><strong>Brand:</strong> {{ product.brand }}</p>
+    <p><strong>Series:</strong> {{ product.series }}</p>
+    <p><strong>Type:</strong> {{ product.type }}</p>
+    <p><a href="{{ product.product_link }}" target="_blank">View on GSMArena</a></p>
+
+    <hr>
+
+    <!-- Average Rating Section -->
+    <h4>Overall Rating:</h4>
+    {% if reviews %}
+        {% with total=0 %}
+            {% for review in reviews %}
+                {% with total=total|add:review.rating %}
+                {% endwith %}
+            {% endfor %}
+            <p>⭐ {{ total|divisibleby:reviews.count|default:total|floatformat:1 }} / 5</p>
+        {% endwith %}
+    {% else %}
+        <p>No ratings yet.</p>
+    {% endif %}
+
+    <!-- Reviews Section -->
+    <h4>User Reviews:</h4>
+    {% if reviews %}
+        <div style="max-height: 400px; overflow-y: auto; padding: 10px; background-color: #f8f9fa; border-radius: 8px;">
+            <ul style="list-style-type: none; padding-left: 0;">
+            {% for review in reviews %}
+                <li style="padding: 12px; margin-bottom: 12px; border-radius: 8px; background-color: #fff; box-shadow: 0px 2px 4px rgba(0,0,0,0.1);">
+                    <p style="margin: 0; font-weight: bold; color: #007bff;">{{ review.user.username }}</p>
+                    <p style="margin: 5px 0;"><strong>Rating:</strong> ⭐ {{ review.rating }}/5</p>
+                    <p><strong>{{ review.title }}</strong></p>
+                    <p>{{ review.content }}</p>
+                    <p style="color: gray; font-size: 0.9em;">{{ review.created_at }}</p>
+                </li>
+            {% endfor %}
+            </ul>
+        </div>
+    {% else %}
+        <p>No reviews yet! Be the first to review.</p>
+    {% endif %}
+
+</div>
+{% endblock %}
