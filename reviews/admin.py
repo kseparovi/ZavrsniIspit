@@ -28,7 +28,9 @@ class ProductAdmin(admin.ModelAdmin):
 
 @admin.register(Review)
 class ReviewAdmin(admin.ModelAdmin):
-    list_display = ('product', 'title', 'rating', 'user', 'created_at')
+    list_display = ('product', 'title', 'username', 'rating')
+
+
     search_fields = ('title', 'user__username', 'product__name')
     list_filter = ('rating', 'created_at')
 

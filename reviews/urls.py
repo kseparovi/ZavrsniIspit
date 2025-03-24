@@ -15,7 +15,7 @@ urlpatterns = [
 
     # AJAX product detail fetch (used by View Details button)
 
-
+    path('product_detail/', views.product_detail, name='product_detail'),
 
     # Autocomplete view
     path('autocomplete/', views.autocomplete, name='autocomplete'),

@@ -10,41 +10,65 @@
     <p><strong>Series:</strong> {{ product.series }}</p>
     <p><strong>Type:</strong> {{ product.type }}</p>
     <p><a href="{{ product.product_link }}" target="_blank">View on GSMArena</a></p>
+    {% if product.phonearena_link %}
+        <p><a href="{{ product.phonearena_link }}" target="_blank">View on PhoneArena</a></p>
+    {% endif %}
+
+    <!-- Additional Description -->
+    <hr>
+<h4>Product Specifications:</h4>
+<ul>
+    {% if product.display_size %}
+    <li><strong>Display Size:</strong> {{ product.display_size }}</li>
+    {% endif %}
+    {% if product.battery %}
+    <li><strong>Battery:</strong> {{ product.battery }}</li>
+    {% endif %}
+    {% if product.chipset %}
+    <li><strong>Chipset:</strong> {{ product.chipset }}</li>
+    {% endif %}
+    {% if product.memory %}
+    <li><strong>Memory:</strong> {{ product.memory }}</li>
+    {% endif %}
+    {% if product.camera %}
+    <li><strong>Camera:</strong> {{ product.camera }}</li>
+    {% endif %}
+</ul>
 
     <hr>
 
-    <!-- Average Rating Section -->
-    <h4>Overall Rating:</h4>
+    <h3>User Reviews:</h3>
     {% if reviews %}
-        {% with total=0 %}
-            {% for review in reviews %}
-                {% with total=total|add:review.rating %}
-                {% endwith %}
-            {% endfor %}
-            <p>⭐ {{ total|divisibleby:reviews.count|default:total|floatformat:1 }} / 5</p>
-        {% endwith %}
+      <div style="margin-top: 15px;">
+        {% for review in reviews %}
+          <div style="padding: 15px; margin-bottom: 12px; border: 1px solid #ddd; border-radius: 8px; background-color: #f9f9f9;">
+            <p style="margin: 0; font-weight: bold; color: #007bff;">{{ review.username|default:"Anonymous" }}</p>
+            <p style="margin: 5px 0; color: #333;">{{ review.comment }}</p>
+            {% if review.rating %}
+            <p style="margin: 0; color: #ff9800;"><strong>Rating:</strong> {{ review.rating }} / 5</p>
+            {% endif %}
+            <small style="color: gray;">{{ review.created_at|date:"F j, Y" }}</small>
+          </div>
+        {% endfor %}
+      </div>
     {% else %}
-        <p>No ratings yet.</p>
+      <p style="color: gray;">No reviews yet!</p>
     {% endif %}
 
-    <!-- Reviews Section -->
-    <h4>User Reviews:</h4>
-    {% if reviews %}
-        <div style="max-height: 400px; overflow-y: auto; padding: 10px; background-color: #f8f9fa; border-radius: 8px;">
-            <ul style="list-style-type: none; padding-left: 0;">
-            {% for review in reviews %}
-                <li style="padding: 12px; margin-bottom: 12px; border-radius: 8px; background-color: #fff; box-shadow: 0px 2px 4px rgba(0,0,0,0.1);">
-                    <p style="margin: 0; font-weight: bold; color: #007bff;">{{ review.user.username }}</p>
-                    <p style="margin: 5px 0;"><strong>Rating:</strong> ⭐ {{ review.rating }}/5</p>
-                    <p><strong>{{ review.title }}</strong></p>
-                    <p>{{ review.content }}</p>
-                    <p style="color: gray; font-size: 0.9em;">{{ review.created_at }}</p>
-                </li>
-            {% endfor %}
-            </ul>
-        </div>
+    <hr>
+
+    <h3>External User Reviews:</h3>
+    {% if external_reviews %}
+      <div style="margin-top: 15px;">
+        {% for review in external_reviews %}
+          <div style="padding: 15px; margin-bottom: 12px; border: 1px solid #ccc; border-radius: 8px; background-color: #f4f4f4;">
+            <p style="margin: 0; font-weight: bold; color: #4caf50;">{{ review.username|default:"Anonymous" }}</p>
+            <p style="margin: 5px 0; color: #333;">{{ review.comment }}</p>
+          </div>
+        {% endfor %}
+      </div>
     {% else %}
-        <p>No reviews yet! Be the first to review.</p>
+      <p style="color: gray;">No external reviews found.</p>
     {% endif %}
 
 </div>

@@ -1,3 +1,4 @@
+# models.py
 from django.db import models
 from django.contrib.auth.models import User
 
@@ -8,10 +9,20 @@ class Product(models.Model):
     type = models.CharField(max_length=255, blank=True, null=True)
     image_url = models.URLField(blank=True, null=True)
     product_link = models.URLField(blank=True, null=True)
+    phonearena_link = models.URLField(blank=True, null=True)
+
+
+    # Product specifications fields
+    dimensions = models.CharField(max_length=255, blank=True, null=True)
+    os = models.CharField(max_length=255, blank=True, null=True)
+    display_size = models.CharField(max_length=255, blank=True, null=True)
+    chipset = models.CharField(max_length=255, blank=True, null=True)
+    battery = models.CharField(max_length=255, blank=True, null=True)
+    memory = models.CharField(max_length=255, blank=True, null=True)
+    camera = models.CharField(max_length=255, blank=True, null=True)
 
     def __str__(self):
         return self.name
-
 
 class ProductReview(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
@@ -21,26 +32,20 @@ class ProductReview(models.Model):
     def __str__(self):
         return f"Review by {self.username}"
 
-# templates/products.html and home.html - already configured correctly based on your upload.
-
-# How to test:
-# - Ensure your scraping logic saves product details to Product model.
-# - Search bar autocomplete will suggest products from Product model.
-# - On search submission, redirect to the detailed product page with reviews.
-
 class Review(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    title = models.CharField(max_length=255)
-    content = models.TextField()
-    rating = models.IntegerField()
+    username = models.CharField(max_length=255, blank=True, null=True)
+    title = models.CharField(max_length=255, blank=True, null=True)
+    comment = models.TextField(blank=True, null=True)
+    content = models.TextField(blank=True, null=True)
+    rating = models.IntegerField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.title
 
 class Comment(models.Model):
-    review = models.ForeignKey(Review, on_delete=models.CASCADE)
+    review = models.ForeignKey(Review, on_delete=models.CASCADE, related_name='comments')
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
@@ -72,3 +77,7 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return self.user.username
+
+# Command to run after editing this file:
+# python manage.py makemigrations
+# python manage.py migrate

@@ -9,6 +9,18 @@ from .forms import SignUpForm
 from django.contrib.auth import authenticate, login as auth_login  # ✅ Rename login import
 
 
+import random
+
+def get_random_headers():
+    USER_AGENTS = [
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36"
+        # Dodaj još user-agenta ako želiš
+    ]
+    return {"User-Agent": random.choice(USER_AGENTS)}
+
+
 def user_login(request):
     if request.method == "POST":
         username = request.POST.get("username")
@@ -113,6 +125,7 @@ def extract_product_type(product_name):
 def scrape_products():
     """Scrape products from GSM Arena for Samsung, Apple, Huawei, Xiaomi."""
     product_info_list = []
+
     urls = {
         "Samsung": "https://www.gsmarena.com/samsung-phones-9.php",
         "Apple": "https://www.gsmarena.com/apple-phones-48.php",
@@ -266,15 +279,6 @@ def scrape_product_details(url):
         "ai_rating": ai_rating,
         "comments": comments  # ✅ Ensure all comments are returned
     }
-def product_detail(request, product_id):
-    product = get_object_or_404(Product, id=product_id)
-    reviews = ProductReview.objects.filter(product=product)
-    return render(request, 'product_detail.html', {'product': product, 'reviews': reviews})
-
-
-
-from django.shortcuts import render
-from .models import Product  # ✅ Ensure you have a Product model
 
 
 
@@ -365,5 +369,235 @@ def product_detail_ajax(request):
     return JsonResponse(data)
 
 
+from bs4 import BeautifulSoup
+import requests
+from .models import Product, ProductReview
 
 
+def scrape_gsmarena_reviews(product_url, product_obj):
+    print(f"Scraping reviews from: {product_url}")
+
+    headers = get_random_headers()
+    response = requests.get(product_url, headers=headers)
+    time.sleep(random.uniform(2, 5))
+
+    if response.status_code != 200:
+        print(f"Failed to fetch product page, status: {response.status_code}")
+        return []
+
+    soup = BeautifulSoup(response.text, 'html.parser')
+    reviews = []
+    comments_section = soup.find('div', id='user-comments')
+
+    # Extract reviews from main page
+    if comments_section:
+        threads = comments_section.find_all('div', class_='user-thread')
+        for thread in threads:
+            username_tag = thread.find('li', class_='uname2')
+            username = username_tag.text.strip() if username_tag else "Anonymous"
+
+            comment_text_tag = thread.find('p', class_='uopin')
+            comment_text = comment_text_tag.text.strip() if comment_text_tag else "No comment provided"
+
+            if not ProductReview.objects.filter(product=product_obj, username=username, comment=comment_text).exists():
+                ProductReview.objects.create(
+                    product=product_obj,
+                    username=username,
+                    comment=comment_text
+                )
+            reviews.append({"username": username, "comment": comment_text})
+
+    # Check if "Read all opinions" link exists and scrape more reviews
+    read_all_link = comments_section.find('a', string="Read all opinions") if comments_section else None
+    if read_all_link:
+        full_reviews_url = "https://www.gsmarena.com/" + read_all_link['href']
+        print(f"Scraping full reviews page: {full_reviews_url}")
+        response = requests.get(full_reviews_url, headers=headers)
+        time.sleep(random.uniform(2, 5))
+
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.text, 'html.parser')
+            threads = soup.find_all('div', class_='user-thread')
+            for thread in threads:
+                username_tag = thread.find('li', class_='uname2')
+                username = username_tag.text.strip() if username_tag else "Anonymous"
+
+                comment_text_tag = thread.find('p', class_='uopin')
+                comment_text = comment_text_tag.text.strip() if comment_text_tag else "No comment provided"
+
+                if not ProductReview.objects.filter(product=product_obj, username=username, comment=comment_text).exists():
+                    ProductReview.objects.create(
+                        product=product_obj,
+                        username=username,
+                        comment=comment_text
+                    )
+                reviews.append({"username": username, "comment": comment_text})
+
+    return reviews
+
+
+def scrape_additional_specs(product_url, product_obj):
+    headers = get_random_headers()
+    response = requests.get(product_url, headers=headers)
+    time.sleep(random.uniform(2, 5))
+
+    if response.status_code != 200:
+        print(f"Failed to fetch product page, status: {response.status_code}")
+        return
+
+    soup = BeautifulSoup(response.text, 'html.parser')
+    specs = {
+        'display_size': None,
+        'battery': None,
+        'chipset': None,
+        'memory': None,
+        'camera': None
+    }
+
+    spec_table = soup.find('div', class_='specs-list')
+    if spec_table:
+        rows = spec_table.find_all('tr')
+        for row in rows:
+            th = row.find('th')
+            td = row.find('td')
+            if th and td:
+                key = th.text.strip().lower()
+                value = td.text.strip()
+
+                if 'display' in key:
+                    specs['display_size'] = value
+                if 'battery' in key:
+                    specs['battery'] = value
+                if 'chipset' in key:
+                    specs['chipset'] = value
+                if 'internal' in key and 'memory' in key:
+                    specs['memory'] = value
+                if 'camera' in key:
+                    specs['camera'] = value
+
+    # Update product model fields
+    Product.objects.filter(id=product_obj.id).update(
+        display_size=specs['display_size'],
+        battery=specs['battery'],
+        chipset=specs['chipset'],
+        memory=specs['memory'],
+        camera=specs['camera']
+
+    )
+
+    print(f"Updated specs for {product_obj.name}")
+
+def scrape_phonearena_reviews(product_url, product_obj):
+    print(f"Scraping PhoneArena reviews from: {product_url}")
+
+    headers = get_random_headers()
+    response = requests.get(product_url, headers=headers)
+    time.sleep(random.uniform(2, 5))
+
+    if response.status_code != 200:
+        print(f"Failed to fetch product page, status: {response.status_code}")
+        return []
+
+    soup = BeautifulSoup(response.content, 'html.parser')
+
+    review_blocks = soup.find_all('div', class_='review-description')
+    reviews = []
+    for block in review_blocks:
+        title_tag = block.find('div', class_='title')
+        title = title_tag.text.strip() if title_tag else "No title"
+
+        content_tag = block.find('p', class_='content')
+        content = content_tag.text.strip() if content_tag else "No review text"
+
+        # Save to DB (optional if needed)
+        if not ProductReview.objects.filter(product=product_obj, username=title, comment=content).exists():
+            ProductReview.objects.create(
+                product=product_obj,
+                username=title,  # Save title as username to differentiate source
+                comment=content
+            )
+
+        reviews.append({'title': title, 'comment': content})
+
+    return reviews
+
+def scrape_all_reviews():
+    all_products = Product.objects.all()
+    for product in all_products:
+        print(f"Checking product: {product.name}")
+        if product.product_link:
+            scrape_gsmarena_reviews(product.product_link, product)
+        if product.phonearena_link:
+            scrape_phonearena_reviews(product.phonearena_link, product)
+
+    print("Review scraping complete.")
+
+def product_detail(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
+
+    # ✅ Add this block BEFORE rendering:
+    if not product.display_size or not product.battery or not product.chipset:
+        if product.product_link:  # Check if link exists
+            scrape_additional_specs(product.product_link, product)
+            product.refresh_from_db()  # Refresh from DB after update
+
+    reviews = ProductReview.objects.filter(product=product)
+
+    return render(request, 'product_detail.html', {
+        'product': product,
+        'reviews': reviews,
+    })
+
+
+def scrape_additional_specs(product_url, product_obj):
+    headers = get_random_headers()
+    response = requests.get(product_url, headers=headers)
+    time.sleep(random.uniform(2, 5))
+
+    if response.status_code != 200:
+        print(f"Failed to fetch product page, status: {response.status_code}")
+        return
+
+    soup = BeautifulSoup(response.text, 'html.parser')
+
+    specs = {
+        'display_size': None,
+        'battery': None,
+        'chipset': None,
+        'memory': None,
+        'camera': None,
+        # Add more fields if you want, e.g., OS, dimensions
+    }
+
+    spec_table = soup.find('div', class_='specs-list')
+    if spec_table:
+        rows = spec_table.find_all('tr')
+        for row in rows:
+            th = row.find('th')
+            td = row.find('td')
+            if th and td:
+                key = th.text.strip().lower()
+                value = td.text.strip()
+
+                # Flexible matching
+                if 'display' in key:
+                    specs['display_size'] = value
+                elif 'battery' in key:
+                    specs['battery'] = value
+                elif 'chipset' in key or 'processor' in key:
+                    specs['chipset'] = value
+                elif 'memory' in key or 'storage' in key:
+                    specs['memory'] = value
+                elif 'camera' in key:
+                    specs['camera'] = value
+
+    # Save updated specs to DB
+    Product.objects.filter(id=product_obj.id).update(
+        display_size=specs['display_size'],
+        battery=specs['battery'],
+        chipset=specs['chipset'],
+        memory=specs['memory'],
+        camera=specs['camera']
+    )
+
+    print(f"Updated specs for {product_obj.name}")
