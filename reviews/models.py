@@ -10,6 +10,7 @@ class Product(models.Model):
     image_url = models.URLField(blank=True, null=True)
     product_link = models.URLField(blank=True, null=True)
     phonearena_link = models.URLField(blank=True, null=True)
+    average_rating = models.FloatField(default=0.0, blank=True, null=True)  # Rating out of 10
 
 
     # Product specifications fields

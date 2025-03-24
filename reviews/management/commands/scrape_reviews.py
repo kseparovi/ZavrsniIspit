@@ -4,6 +4,7 @@ import time
 from bs4 import BeautifulSoup
 from django.core.management.base import BaseCommand
 from reviews.models import Product, Review
+from reviews.views import scrape_gsmarena_reviews
 
 # List of User Agents
 USER_AGENTS = [
@@ -20,44 +21,63 @@ USER_AGENTS = [
 # Helper function to get random headers
 def get_random_headers():
     return {"User-Agent": random.choice(USER_AGENTS)}
-
-# GSM Arena scraper
-def scrape_gsmarena_reviews(product):
-    print(f"Scraping GSM Arena reviews for {product.name}...")
+def scrape_gsmarena_specs(product):
+    print(f"Scraping specifications for {product.name}...")
     url = product.product_link
 
     try:
         headers = get_random_headers()
         response = requests.get(url, headers=headers)
 
-        if response.status_code == 429:
-            print("Too many requests (429), sleeping...")
-            time.sleep(random.uniform(5, 10))
-            headers = get_random_headers()
-            response = requests.get(url, headers=headers)
-
         if response.status_code != 200:
-            print(f"Failed to fetch GSM Arena page, status: {response.status_code}")
+            print(f"Failed to fetch specs page, status: {response.status_code}")
             return
 
         soup = BeautifulSoup(response.content, "html.parser")
 
-        # Parse reviews - adjust according to actual page structure
-        review_elements = soup.select("div.user-thread")
-        count = 0
-        for element in review_elements:
-            username = element.select_one(".uname").get_text(strip=True)
-            review_text = element.select_one(".uopin").get_text(strip=True)
+        specs = {
+            'display_size': None,
+            'battery': None,
+            'chipset': None,
+            'memory': None,
+            'camera': None
+        }
 
-            existing_review = Review.objects.filter(product=product, comment=review_text).first()
-            if not existing_review:
-                Review.objects.create(product=product, username=username, comment=review_text)
-                count += 1
+        # SPEC SCRAPING
+        spec_table = soup.find('div', id='specs-list')
+        if spec_table:
+            rows = spec_table.find_all('tr')
+            for row in rows:
+                th = row.find('th')
+                td = row.find('td')
+                if th and td:
+                    key = th.text.strip().lower()
+                    value = td.text.strip()
 
-        print(f"Scraped {count} GSM reviews for {product.name}")
+                    if 'display' in key or 'size' in key:
+                        specs['display_size'] = value
+                    if 'battery' in key:
+                        specs['battery'] = value
+                    if 'chipset' in key:
+                        specs['chipset'] = value
+                    if 'internal' in key or 'memory' in key:
+                        specs['memory'] = value
+                    if 'camera' in key:
+                        specs['camera'] = value
+
+        # Update product
+        Product.objects.filter(id=product.id).update(
+            display_size=specs['display_size'],
+            battery=specs['battery'],
+            chipset=specs['chipset'],
+            memory=specs['memory'],
+            camera=specs['camera']
+        )
+        print(f"Updated specs for {product.name}")
 
     except Exception as e:
-        print(f"Error scraping GSM Arena for {product.name}: {str(e)}")
+        print(f"Error scraping specs for {product.name}: {str(e)}")
+
 
 # Phone Arena scraper (stub example)
 def scrape_phonearena_reviews(product):
@@ -99,13 +119,23 @@ def scrape_phonearena_reviews(product):
 
 # Django command class
 class Command(BaseCommand):
-    help = "Scrape reviews from GSM Arena and Phone Arena"
+    help = "Scrape reviews and specifications"
 
     def handle(self, *args, **kwargs):
         products = Product.objects.all()
-        print(f"Scraping reviews for {len(products)} products...")
+        print(f"Scraping data for {len(products)} products...")
 
         for product in products:
-            scrape_gsmarena_reviews(product)
-            scrape_phonearena_reviews(product)
-            time.sleep(random.uniform(2, 5))  # Delay between products to avoid rate limits
+            # ✅ Scrape Specs
+            scrape_gsmarena_specs(product)
+
+            # ✅ Scrape Reviews (Correct argument passing!)
+            if product.product_link:
+                scrape_gsmarena_reviews(product.product_link, product)
+            if product.phonearena_link:
+                scrape_phonearena_reviews(product.phonearena_link, product)
+
+            # Optional: Sleep to avoid rate limits
+            time.sleep(random.uniform(2, 4))
+
+        print("All scraping completed.")

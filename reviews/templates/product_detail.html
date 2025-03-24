@@ -37,23 +37,30 @@
 
     <hr>
 
-    <h3>User Reviews:</h3>
-    {% if reviews %}
-      <div style="margin-top: 15px;">
-        {% for review in reviews %}
-          <div style="padding: 15px; margin-bottom: 12px; border: 1px solid #ddd; border-radius: 8px; background-color: #f9f9f9;">
-            <p style="margin: 0; font-weight: bold; color: #007bff;">{{ review.username|default:"Anonymous" }}</p>
-            <p style="margin: 5px 0; color: #333;">{{ review.comment }}</p>
-            {% if review.rating %}
-            <p style="margin: 0; color: #ff9800;"><strong>Rating:</strong> {{ review.rating }} / 5</p>
-            {% endif %}
-            <small style="color: gray;">{{ review.created_at|date:"F j, Y" }}</small>
-          </div>
-        {% endfor %}
+<h3>User Reviews:</h3>
+{% if reviews %}
+  <div style="margin-top: 15px;">
+    {% for review in reviews %}
+      <div style="padding: 15px; margin-bottom: 12px; border: 1px solid #ddd; border-radius: 8px; background-color: #f9f9f9;">
+        <p style="margin: 0; font-weight: bold; color: #007bff;">{{ review.username|default:"Anonymous" }}</p>
+        <p style="margin: 5px 0; color: #333;">{{ review.comment }}</p>
+        {% if review.rating %}
+        <p style="margin: 0; color: #ff9800;"><strong>Rating:</strong> {{ review.rating }} / 5</p>
+        {% endif %}
+        <small style="color: gray;">{{ review.created_at|date:"F j, Y" }}</small>
       </div>
-    {% else %}
-      <p style="color: gray;">No reviews yet!</p>
-    {% endif %}
+    {% endfor %}
+  </div>
+
+  <!-- Move Average User Rating OUTSIDE the loop -->
+  <p style="font-weight:bold; margin-top: 10px;">
+    Average User Rating: {{ product.average_rating|default:"N/A" }} / 10
+  </p>
+
+{% else %}
+  <p style="color: gray;">No reviews yet!</p>
+{% endif %}
+
 
     <hr>
 
