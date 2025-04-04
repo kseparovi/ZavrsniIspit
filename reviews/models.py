@@ -10,7 +10,8 @@ class Product(models.Model):
     image_url = models.URLField(blank=True, null=True)
     product_link = models.URLField(blank=True, null=True)
     phonearena_link = models.URLField(blank=True, null=True)
-    average_rating = models.FloatField(default=0.0, blank=True, null=True)  # Rating out of 10
+
+    external_id = models.CharField(max_length=255, blank=True, null=True, unique=True)  # 👈 Add this
 
 
     # Product specifications fields
@@ -42,8 +43,9 @@ class Review(models.Model):
     rating = models.IntegerField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
-    def __str__(self):
-        return self.title
+def __str__(self):
+    return self.title or self.comment or f"Review by {self.username}"
+
 
 class Comment(models.Model):
     review = models.ForeignKey(Review, on_delete=models.CASCADE, related_name='comments')

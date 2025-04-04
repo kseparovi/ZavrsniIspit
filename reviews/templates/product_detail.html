@@ -14,53 +14,63 @@
         <p><a href="{{ product.phonearena_link }}" target="_blank">View on PhoneArena</a></p>
     {% endif %}
 
-    <!-- Additional Description -->
     <hr>
-<h4>Product Specifications:</h4>
-<ul>
-    {% if product.display_size %}
-    <li><strong>Display Size:</strong> {{ product.display_size }}</li>
-    {% endif %}
-    {% if product.battery %}
-    <li><strong>Battery:</strong> {{ product.battery }}</li>
-    {% endif %}
-    {% if product.chipset %}
-    <li><strong>Chipset:</strong> {{ product.chipset }}</li>
-    {% endif %}
-    {% if product.memory %}
-    <li><strong>Memory:</strong> {{ product.memory }}</li>
-    {% endif %}
-    {% if product.camera %}
-    <li><strong>Camera:</strong> {{ product.camera }}</li>
-    {% endif %}
-</ul>
-
-    <hr>
-
-<h3>User Reviews:</h3>
-{% if reviews %}
-  <div style="margin-top: 15px;">
-    {% for review in reviews %}
-      <div style="padding: 15px; margin-bottom: 12px; border: 1px solid #ddd; border-radius: 8px; background-color: #f9f9f9;">
-        <p style="margin: 0; font-weight: bold; color: #007bff;">{{ review.username|default:"Anonymous" }}</p>
-        <p style="margin: 5px 0; color: #333;">{{ review.comment }}</p>
-        {% if review.rating %}
-        <p style="margin: 0; color: #ff9800;"><strong>Rating:</strong> {{ review.rating }} / 5</p>
+    <h4>Product Specifications:</h4>
+    <ul>
+        {% if product.display_size %}
+        <li><strong>Display Size:</strong> {{ product.display_size }}</li>
         {% endif %}
-        <small style="color: gray;">{{ review.created_at|date:"F j, Y" }}</small>
+        {% if product.battery %}
+        <li><strong>Battery:</strong> {{ product.battery }}</li>
+        {% endif %}
+        {% if product.chipset %}
+        <li><strong>Chipset:</strong> {{ product.chipset }}</li>
+        {% endif %}
+        {% if product.memory %}
+        <li><strong>Memory:</strong> {{ product.memory }}</li>
+        {% endif %}
+        {% if product.camera %}
+        <li><strong>Camera:</strong> {{ product.camera }}</li>
+        {% endif %}
+    </ul>
+
+    <hr>
+
+    <h3>User Reviews:</h3>
+    {% if reviews %}
+      <div style="margin-top: 15px;">
+        {% for review in reviews %}
+          <div style="padding: 15px; margin-bottom: 12px; border: 1px solid #ddd; border-radius: 8px; background-color: #f9f9f9;">
+            <p style="margin: 0; font-weight: bold; color: #007bff;">{{ review.username|default:"Anonymous" }}</p>
+            <p style="margin: 5px 0; color: #333;">{{ review.comment }}</p>
+            {% if review.rating %}
+            <p style="margin: 0; color: #ff9800;"><strong>Rating:</strong> {{ review.rating }} / 5</p>
+            {% endif %}
+            <small style="color: gray;">{{ review.created_at|date:"F j, Y" }}</small>
+          </div>
+        {% endfor %}
       </div>
-    {% endfor %}
-  </div>
+      <p style="font-weight:bold; margin-top: 10px;">
+        <strong>Average User Rating:</strong> {{ product.average_rating }} / 10
+      </p>
+    {% else %}
+      <p style="color: gray;">No reviews yet!</p>
+    {% endif %}
 
-  <!-- Move Average User Rating OUTSIDE the loop -->
-  <p style="font-weight:bold; margin-top: 10px;">
-    Average User Rating: {{ product.average_rating|default:"N/A" }} / 10
-  </p>
+    <hr>
 
-{% else %}
-  <p style="color: gray;">No reviews yet!</p>
-{% endif %}
+    <!-- ✅ Review Form -->
+    {% if user.is_authenticated %}
+    <h3>Leave a Review</h3>
+    <form method="post" style="margin-top: 20px;">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn">Submit Review</button>
+    </form>
+    {% else %}
+    <p><a href="{% url 'reviews:login' %}?next={{ request.path }}">Log in</a> to leave a review.</p>
 
+    {% endif %}
 
     <hr>
 
@@ -77,6 +87,5 @@
     {% else %}
       <p style="color: gray;">No external reviews found.</p>
     {% endif %}
-
 </div>
 {% endblock %}

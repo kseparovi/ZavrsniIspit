@@ -552,7 +552,7 @@ def product_detail(request, product_id):
 def scrape_additional_specs(product_url, product_obj):
     headers = get_random_headers()
     response = requests.get(product_url, headers=headers)
-    time.sleep(random.uniform(10, 15))  # Slow down requests to avoid 429
+    time.sleep(random.uniform(2, 5))
 
     if response.status_code != 200:
         print(f"Failed to fetch product page, status: {response.status_code}")
@@ -560,53 +560,44 @@ def scrape_additional_specs(product_url, product_obj):
 
     soup = BeautifulSoup(response.text, 'html.parser')
 
-    # 📌 Extract using specific data-spec attributes:
-    display = soup.find('td', {'data-spec': 'displaysize'})
-    battery = soup.find('td', {'data-spec': 'batsize-hl'})
-    chipset = soup.find('td', {'data-spec': 'chipset'})
-    memory = soup.find('td', {'data-spec': 'internalmemory'})
-    camera = soup.find('td', {'data-spec': 'cam1modules'})
+    specs = {
+        'display_size': None,
+        'battery': None,
+        'chipset': None,
+        'memory': None,
+        'camera': None,
+        # Add more fields if you want, e.g., OS, dimensions
+    }
 
-    # 📌 Assign values safely
-    display_size = display.text.strip() if display else None
-    battery_text = battery.text.strip() if battery else None
-    chipset_text = chipset.text.strip() if chipset else None
-    memory_text = memory.text.strip() if memory else None
-    camera_text = camera.text.strip() if camera else None
+    spec_table = soup.find('div', class_='specs-list')
+    if spec_table:
+        rows = spec_table.find_all('tr')
+        for row in rows:
+            th = row.find('th')
+            td = row.find('td')
+            if th and td:
+                key = th.text.strip().lower()
+                value = td.text.strip()
 
-    # ✅ Update your product instance
+                # Flexible matching
+                if 'display' in key:
+                    specs['display_size'] = value
+                elif 'battery' in key:
+                    specs['battery'] = value
+                elif 'chipset' in key or 'processor' in key:
+                    specs['chipset'] = value
+                elif 'memory' in key or 'storage' in key:
+                    specs['memory'] = value
+                elif 'camera' in key:
+                    specs['camera'] = value
+
+    # Save updated specs to DB
     Product.objects.filter(id=product_obj.id).update(
-        display_size=display_size,
-        battery=battery_text,
-        chipset=chipset_text,
-        memory=memory_text,
-        camera=camera_text
+        display_size=specs['display_size'],
+        battery=specs['battery'],
+        chipset=specs['chipset'],
+        memory=specs['memory'],
+        camera=specs['camera']
     )
 
-    print(f"✅ Updated specs for {product_obj.name}")
-
-
-from textblob import TextBlob
-from .models import ProductReview, Product
-
-
-def analyze_sentiment_and_update_rating(product):
-    reviews = ProductReview.objects.filter(product=product)
-
-    total_score = 0
-    count = 0
-
-    for review in reviews:
-        analysis = TextBlob(review.comment)
-        polarity = analysis.sentiment.polarity  # Range: -1 to 1
-        score = round((polarity + 1) * 5, 2)  # Convert to 0-10 scale
-        total_score += score
-        count += 1
-
-    if count > 0:
-        average_rating = round(total_score / count, 2)
-        product.average_rating = average_rating
-        product.save()
-        print(f"Updated rating for {product.name}: {average_rating}/10")
-    else:
-        print(f"No reviews to analyze for {product.name}")
+    print(f"Updated specs for {product_obj.name}")
