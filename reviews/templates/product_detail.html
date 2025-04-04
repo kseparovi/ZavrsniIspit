@@ -86,18 +86,6 @@
 
     <hr>
 
-    <h3>External User Reviews:</h3>
-    {% if external_reviews %}
-        <div style="margin-top: 15px;">
-            {% for review in external_reviews %}
-                <div style="padding: 15px; margin-bottom: 12px; border: 1px solid #ccc; border-radius: 8px; background-color: #f4f4f4;">
-                    <p style="margin: 0; font-weight: bold; color: #4caf50;">{{ review.username|default:"Anonymous" }}</p>
-                    <p style="margin: 5px 0; color: #333;">{{ review.comment }}</p>
-                </div>
-            {% endfor %}
-        </div>
-    {% else %}
-        <p style="color: gray;">No external reviews found.</p>
-    {% endif %}
+
 </div>
 {% endblock %}

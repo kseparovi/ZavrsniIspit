@@ -14,6 +14,7 @@ from .forms import SignUpForm, ProductReviewForm
 from .utils import analyze_sentiment_score
 from .models import Product, ProductReview
 from textblob import TextBlob
+from .forms import SignUpForm
 
 
 def get_random_headers():
@@ -45,18 +46,20 @@ def logout_view(request):
     return redirect("reviews:home")
 
 
+from django.shortcuts import render, redirect
+from django.contrib.auth import login
+from .forms import SignUpForm
+
 def user_signup(request):
-    if request.method == "POST":
+    if request.method == 'POST':
         form = SignUpForm(request.POST)
         if form.is_valid():
             user = form.save()
             login(request, user)
-            return redirect("home")
+            return redirect('reviews:home')  # Redirect to the homepage
     else:
         form = SignUpForm()
-
-    return render(request, "signup.html", {"form": form})
-
+    return render(request, 'signup.html', {'form': form})
 
 def get_content(url):
     session = requests.Session()
