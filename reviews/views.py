@@ -560,19 +560,11 @@ def analyze_sentiment_score(reviews):
 def product_detail(request, product_id):
     product = get_object_or_404(Product, id=product_id)
 
-    # Fetch specs if missing
     if not product.display_size or not product.battery or not product.chipset:
         if product.product_link:
             scrape_additional_specs(product.product_link, product)
             product.refresh_from_db()
 
-    reviews = ProductReview.objects.filter(product=product)
-
-    # ✅ Update AI Rating
-    product.ai_rating = analyze_sentiment_score(reviews)
-    product.save()
-
-    # ✅ Review form
     if request.method == "POST":
         form = ProductReviewForm(request.POST)
         if form.is_valid():
@@ -584,12 +576,20 @@ def product_detail(request, product_id):
     else:
         form = ProductReviewForm()
 
+    reviews = ProductReview.objects.filter(product=product)
+    external_reviews = []  # Optional: scraped reviews from other sources
+
+    # 🔥 Recalculate AI rating every time (live from latest reviews)
+    ai_rating = analyze_sentiment_score(reviews)
+
     return render(request, 'product_detail.html', {
         'product': product,
         'reviews': reviews,
+        'external_reviews': external_reviews,
         'form': form,
-        'external_reviews': [],  # you can fill this as needed
+        'ai_rating': ai_rating,  # Pass it to template
     })
+
 
 def scrape_additional_specs(product_url, product_obj):
     headers = get_random_headers()
