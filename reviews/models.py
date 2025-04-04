@@ -1,6 +1,8 @@
 # models.py
 from django.db import models
 from django.contrib.auth.models import User
+from textblob import TextBlob
+
 
 class Product(models.Model):
     name = models.CharField(max_length=255)
@@ -23,6 +25,22 @@ class Product(models.Model):
     battery = models.CharField(max_length=255, blank=True, null=True)
     memory = models.CharField(max_length=255, blank=True, null=True)
     camera = models.CharField(max_length=255, blank=True, null=True)
+
+    @property
+    def ai_rating_calculated(self):
+        from .models import ProductReview
+        reviews = ProductReview.objects.filter(product=self)
+        if not reviews:
+            return 5.0
+        total_score = 0
+        count = 0
+        for review in reviews:
+            if review.comment:
+                polarity = TextBlob(review.comment).sentiment.polarity
+                score = (polarity + 1) * 5
+                total_score += score
+                count += 1
+        return round(total_score / count, 1) if count else 5.0
 
     def __str__(self):
         return self.name

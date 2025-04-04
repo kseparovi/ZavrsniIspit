@@ -16,10 +16,22 @@
 
 <hr>
 
-{% if product.ai_rating %}
-<p><strong>🤖 AI-Generated Rating (Based on Reviews):</strong> {{ ai_rating }} / 10</p>
+{% if product.ai_rating_calculated is not None %}
+    <p style="font-size: 18px; font-weight: bold; color: #4caf50;">
+        🤖 AI-Generated Rating (Based on Reviews): {{ product.ai_rating_calculated }} / 10
+    </p>
 
-</p>
+    <div style="font-size: 24px; color: gold; line-height: 1;">
+        {% with full_stars=product.ai_rating_calculated|floatformat:0 %}
+            {% for i in "0123456789" %}
+                {% if forloop.counter <= full_stars|add:0 %}
+                    ★
+                {% else %}
+                    ☆
+                {% endif %}
+            {% endfor %}
+        {% endwith %}
+    </div>
 {% endif %}
 
 <h4>Product Specifications:</h4>

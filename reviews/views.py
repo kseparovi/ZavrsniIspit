@@ -7,6 +7,7 @@ import random  # Add
 from django.contrib.auth import authenticate, login, logout
 from .forms import SignUpForm, ProductReviewForm
 from django.contrib.auth import authenticate, login as auth_login  # ✅ Rename login import
+from .utils import analyze_sentiment_score
 
 
 import random
@@ -164,14 +165,15 @@ def scrape_products():
                 })
     return product_info_list
 
+from .models import Product, ProductReview
+from .utils import analyze_sentiment_score  # make sure this exists
 
 def products(request):
     selected_brands = request.GET.getlist('brand')
     selected_series = request.GET.getlist('series')
     selected_types = request.GET.getlist('type')
 
-    products = Product.objects.all().order_by('name')  # Alphabetical order
-
+    products = Product.objects.all().order_by('name')
 
     if selected_brands:
         products = products.filter(brand__in=selected_brands)
@@ -179,6 +181,11 @@ def products(request):
         products = products.filter(series__in=selected_series)
     if selected_types:
         products = products.filter(type__in=selected_types)
+
+    # Add AI rating to each product
+    for product in products:
+        reviews = ProductReview.objects.filter(product=product)
+        product.ai_rating = analyze_sentiment_score(reviews)
 
     context = {
         'products': products,
@@ -189,7 +196,9 @@ def products(request):
         'selected_series': selected_series,
         'selected_types': selected_types,
     }
+
     return render(request, 'products.html', context)
+
 
 def index(request):
     """Render home page."""
@@ -532,28 +541,6 @@ def scrape_all_reviews():
 
     print("Review scraping complete.")
 
-    from .forms import ProductReviewForm
-
-
-    from textblob import TextBlob
-
-def analyze_sentiment_score(reviews):
-        """Analyze sentiment of reviews and return score on a 1–10 scale."""
-        if not reviews:
-            return 5.0  # Neutral if no reviews
-
-        total_score = 0
-        count = 0
-
-        for review in reviews:
-            text = review.comment
-            if text:
-                polarity = TextBlob(text).sentiment.polarity  # range: [-1, 1]
-                score = (polarity + 1) * 5  # Convert to range [0, 10]
-                total_score += score
-                count += 1
-
-        return round(total_score / count, 1) if count else 5.0
 
 
 
@@ -579,15 +566,12 @@ def product_detail(request, product_id):
     reviews = ProductReview.objects.filter(product=product)
     external_reviews = []  # Optional: scraped reviews from other sources
 
-    # 🔥 Recalculate AI rating every time (live from latest reviews)
-    ai_rating = analyze_sentiment_score(reviews)
-
     return render(request, 'product_detail.html', {
         'product': product,
         'reviews': reviews,
         'external_reviews': external_reviews,
         'form': form,
-        'ai_rating': ai_rating,  # Pass it to template
+        'ai_rating': product.ai_rating_calculated,  # ✅ Fixed!
     })
 
 
