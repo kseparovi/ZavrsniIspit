@@ -22,4 +22,8 @@ urlpatterns = [
 
     # Search results view
     path('search-results/', views.search_results, name='search_results'),
+
+# reviews/urls.py
+    path("review/delete/<int:review_id>/", views.delete_review, name="delete_review"),
+
 ]

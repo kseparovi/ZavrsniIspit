@@ -48,8 +48,9 @@ class Product(models.Model):
 class ProductReview(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     username = models.CharField(max_length=255, default="Anonymous")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)  # ✅ Add this line
     comment = models.TextField()
-    rating = models.IntegerField(null=True, blank=True)  # ✅ Add this line
+    rating = models.IntegerField(null=True, blank=True)
 
     def __str__(self):
         return f"Review by {self.username}"
