@@ -10,6 +10,7 @@ class Product(models.Model):
     image_url = models.URLField(blank=True, null=True)
     product_link = models.URLField(blank=True, null=True)
     phonearena_link = models.URLField(blank=True, null=True)
+    ai_rating = models.FloatField(blank=True, null=True)  # 👈 Add this
 
     external_id = models.CharField(max_length=255, blank=True, null=True, unique=True)  # 👈 Add this
 

@@ -535,6 +535,27 @@ def scrape_all_reviews():
     from .forms import ProductReviewForm
 
 
+    from textblob import TextBlob
+
+def analyze_sentiment_score(reviews):
+        """Analyze sentiment of reviews and return score on a 1–10 scale."""
+        if not reviews:
+            return 5.0  # Neutral if no reviews
+
+        total_score = 0
+        count = 0
+
+        for review in reviews:
+            text = review.comment
+            if text:
+                polarity = TextBlob(text).sentiment.polarity  # range: [-1, 1]
+                score = (polarity + 1) * 5  # Convert to range [0, 10]
+                total_score += score
+                count += 1
+
+        return round(total_score / count, 1) if count else 5.0
+
+
 
 def product_detail(request, product_id):
     product = get_object_or_404(Product, id=product_id)
@@ -545,28 +566,30 @@ def product_detail(request, product_id):
             scrape_additional_specs(product.product_link, product)
             product.refresh_from_db()
 
-    # Handle review form
+    reviews = ProductReview.objects.filter(product=product)
+
+    # ✅ Update AI Rating
+    product.ai_rating = analyze_sentiment_score(reviews)
+    product.save()
+
+    # ✅ Review form
     if request.method == "POST":
         form = ProductReviewForm(request.POST)
         if form.is_valid():
             review = form.save(commit=False)
             review.product = product
-            review.username = request.user.username  # Or request.user.get_full_name()
+            review.username = request.user.username
             review.save()
             return redirect('reviews:product_detail', product_id=product.id)
     else:
         form = ProductReviewForm()
 
-    reviews = ProductReview.objects.filter(product=product)
-    external_reviews = []  # You can pass PhoneArena reviews here if needed
-
     return render(request, 'product_detail.html', {
         'product': product,
         'reviews': reviews,
-        'external_reviews': external_reviews,
         'form': form,
+        'external_reviews': [],  # you can fill this as needed
     })
-
 
 def scrape_additional_specs(product_url, product_obj):
     headers = get_random_headers()
@@ -620,3 +643,6 @@ def scrape_additional_specs(product_url, product_obj):
     )
 
     print(f"Updated specs for {product_obj.name}")
+
+
+

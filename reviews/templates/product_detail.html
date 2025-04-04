@@ -14,9 +14,16 @@
         <p><a href="{{ product.phonearena_link }}" target="_blank">View on PhoneArena</a></p>
     {% endif %}
 
-    <hr>
-    <h4>Product Specifications:</h4>
-    <ul>
+<hr>
+
+{% if product.ai_rating %}
+<p style="font-size: 18px; font-weight: bold; color: #4caf50;">
+    🤖 AI-Generated Rating (Based on Reviews): {{ product.ai_rating }} / 10
+</p>
+{% endif %}
+
+<h4>Product Specifications:</h4>
+<ul>
         {% if product.display_size %}
         <li><strong>Display Size:</strong> {{ product.display_size }}</li>
         {% endif %}
@@ -50,9 +57,7 @@
           </div>
         {% endfor %}
       </div>
-      <p style="font-weight:bold; margin-top: 10px;">
-        <strong>Average User Rating:</strong> {{ product.average_rating }} / 10
-      </p>
+
     {% else %}
       <p style="color: gray;">No reviews yet!</p>
     {% endif %}
