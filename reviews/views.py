@@ -5,7 +5,7 @@ import re
 from bs4 import BeautifulSoup
 import random  # Add
 from django.contrib.auth import authenticate, login, logout
-from .forms import SignUpForm
+from .forms import SignUpForm, ProductReviewForm
 from django.contrib.auth import authenticate, login as auth_login  # ✅ Rename login import
 
 
@@ -532,20 +532,39 @@ def scrape_all_reviews():
 
     print("Review scraping complete.")
 
+    from .forms import ProductReviewForm
+
+
+
 def product_detail(request, product_id):
     product = get_object_or_404(Product, id=product_id)
 
-    # ✅ Add this block BEFORE rendering:
+    # Fetch specs if missing
     if not product.display_size or not product.battery or not product.chipset:
-        if product.product_link:  # Check if link exists
+        if product.product_link:
             scrape_additional_specs(product.product_link, product)
-            product.refresh_from_db()  # Refresh from DB after update
+            product.refresh_from_db()
+
+    # Handle review form
+    if request.method == "POST":
+        form = ProductReviewForm(request.POST)
+        if form.is_valid():
+            review = form.save(commit=False)
+            review.product = product
+            review.username = request.user.username  # Or request.user.get_full_name()
+            review.save()
+            return redirect('reviews:product_detail', product_id=product.id)
+    else:
+        form = ProductReviewForm()
 
     reviews = ProductReview.objects.filter(product=product)
+    external_reviews = []  # You can pass PhoneArena reviews here if needed
 
     return render(request, 'product_detail.html', {
         'product': product,
         'reviews': reviews,
+        'external_reviews': external_reviews,
+        'form': form,
     })
 
 
