@@ -12,7 +12,7 @@ from django.views.decorators.http import require_GET
 
 from .forms import SignUpForm, ProductReviewForm
 from .utils import analyze_sentiment_score
-from .models import Product, ProductReview
+from .models import Product, ProductReview, Review
 from textblob import TextBlob
 from .forms import SignUpForm
 
@@ -157,31 +157,33 @@ def analyze_sentiment(comments):
 
     return round(total_score / count, 1) if count else 2.5
 
-
 def product_detail(request, product_id):
     product = get_object_or_404(Product, id=product_id)
 
+    # Scrape missing specs from GSM Arena and/or PhoneArena
     if not product.display_size or not product.battery or not product.chipset:
         if product.product_link:
             scrape_additional_specs(product.product_link, product)
             product.refresh_from_db()
+        if product.phonearena_link:
+            scrape_phonearena_specs(product.phonearena_link, product)
+            product.refresh_from_db()
 
-    # ✅ Handle review submission
+    # Review form logic
     if request.method == "POST":
         form = ProductReviewForm(request.POST)
         if form.is_valid():
             review = form.save(commit=False)
             review.product = product
             review.username = request.user.username
-            review.user = request.user  # ✅ This line is key to allow deletion
+            review.user = request.user
             review.save()
             return redirect('reviews:product_detail', product_id=product.id)
     else:
         form = ProductReviewForm()
 
-    # ✅ Collect reviews for this product
     reviews = ProductReview.objects.filter(product=product)
-    external_reviews = []  # Your scraped reviews, if any
+    external_reviews = []
 
     return render(request, 'product_detail.html', {
         'product': product,
@@ -190,7 +192,6 @@ def product_detail(request, product_id):
         'form': form,
         'ai_rating': product.ai_rating_calculated,
     })
-
 
 @login_required
 def delete_review(request, review_id):
@@ -254,3 +255,64 @@ def scrape_additional_specs(product_url, product_obj):
     )
 
     print(f"Updated specs for {product_obj.name}")
+
+
+def scrape_phonearena_specs(phonearena_url, product_obj):
+    print(f"🔍 Scraping PhoneArena specs from: {phonearena_url}")
+    headers = get_random_headers()
+    response = requests.get(phonearena_url, headers=headers)
+    time.sleep(random.uniform(2, 4))
+
+    if response.status_code != 200:
+        print(f"❌ Failed to load PhoneArena page: {response.status_code}")
+        return
+
+    soup = BeautifulSoup(response.text, "html.parser")
+
+    specs = {
+        'display_size': None,
+        'battery': None,
+        'chipset': None,
+        'memory': None,
+        'camera': None,
+    }
+
+    spec_sections = soup.find_all('div', class_='s_specs_box')
+    for section in spec_sections:
+        title_div = section.find('div', class_='s_specs_title')
+        if not title_div:
+            continue
+        title = title_div.text.strip().lower()
+
+        rows = section.find_all('li')
+        for row in rows:
+            label = row.find('span', class_='s_specs_label')
+            value = row.find('span', class_='s_specs_value')
+
+            if not label or not value:
+                continue
+
+            label_text = label.text.strip().lower()
+            value_text = value.text.strip()
+
+            if 'display' in title and not specs['display_size']:
+                specs['display_size'] = value_text
+            elif 'battery' in title and not specs['battery']:
+                specs['battery'] = value_text
+            elif 'hardware' in title:
+                if 'chipset' in label_text:
+                    specs['chipset'] = value_text
+                elif 'ram' in label_text or 'storage' in label_text:
+                    specs['memory'] = value_text
+            elif 'camera' in title and not specs['camera']:
+                specs['camera'] = value_text
+
+    Product.objects.filter(id=product_obj.id).update(
+        display_size=specs['display_size'],
+        battery=specs['battery'],
+        chipset=specs['chipset'],
+        memory=specs['memory'],
+        camera=specs['camera'],
+    )
+
+    print(f"✅ Updated PhoneArena specs for {product_obj.name}")

@@ -1,71 +1,74 @@
 {% extends "base.html" %}
-
 {% block title %}Sign Up{% endblock %}
 
 {% block content %}
-<div class="container" style="margin-top: 100px;">
-  <div class="row">
-    <div class="col s12 m8 offset-m2">
-      <div class="card">
-        <div class="card-content">
-          <span class="card-title center-align">Create Account</span>
+<div class="container" style="margin-top: 80px; max-width: 600px;">
+  <div class="card z-depth-3">
+    <div class="card-content">
+      <h5 class="center-align">Create Your Account</h5>
 
-          <form method="post" novalidate>
-            {% csrf_token %}
+      <form method="post" novalidate autocomplete="off">
+        {% csrf_token %}
 
-            <div class="input-field">
-              {{ form.username.label_tag }}
-              {{ form.username }}
-              {% for error in form.username.errors %}
-                <span class="helper-text red-text">{{ error }}</span>
-              {% endfor %}
-            </div>
-
-            <div class="input-field">
-              {{ form.email.label_tag }}
-              {{ form.email }}
-              {% for error in form.email.errors %}
-                <span class="helper-text red-text">{{ error }}</span>
-              {% endfor %}
-            </div>
-
-            <div class="input-field">
-              {{ form.password1.label_tag }}
-              {{ form.password1 }}
-              {% for error in form.password1.errors %}
-                <span class="helper-text red-text">{{ error }}</span>
-              {% endfor %}
-            </div>
-
-            <div class="input-field">
-              {{ form.password2.label_tag }}
-              {{ form.password2 }}
-              {% for error in form.password2.errors %}
-                <span class="helper-text red-text">{{ error }}</span>
-              {% endfor %}
-            </div>
-
-            {% for error in form.non_field_errors %}
-              <p class="red-text center-align">{{ error }}</p>
-            {% endfor %}
-
-            <div class="center-align" style="margin-top: 20px;">
-              <button type="submit" class="btn waves-effect waves-light">Sign Up</button>
-            </div>
-          </form>
-
-          <div class="center-align" style="margin-top: 15px;">
-            Already have an account? <a href="{% url 'reviews:login' %}">Log in</a>
-          </div>
+        <div class="input-field">
+          <i class="material-icons prefix">person</i>
+          {{ form.username.label_tag }}
+          {{ form.username }}
+          {% for error in form.username.errors %}
+            <span class="helper-text red-text">{{ error }}</span>
+          {% endfor %}
         </div>
+
+        <div class="input-field">
+          <i class="material-icons prefix">email</i>
+          {{ form.email.label_tag }}
+          {{ form.email }}
+          {% for error in form.email.errors %}
+            <span class="helper-text red-text">{{ error }}</span>
+          {% endfor %}
+        </div>
+
+        <div class="input-field">
+          <i class="material-icons prefix">lock</i>
+          {{ form.password1.label_tag }}
+          {{ form.password1 }}
+          {% for error in form.password1.errors %}
+            <span class="helper-text red-text">{{ error }}</span>
+          {% endfor %}
+        </div>
+
+        <div class="input-field">
+          <i class="material-icons prefix">lock_outline</i>
+          {{ form.password2.label_tag }}
+          {{ form.password2 }}
+          {% for error in form.password2.errors %}
+            <span class="helper-text red-text">{{ error }}</span>
+          {% endfor %}
+        </div>
+
+        {% for error in form.non_field_errors %}
+          <p class="red-text center-align">{{ error }}</p>
+        {% endfor %}
+
+        <div class="center-align" style="margin-top: 25px;">
+          <button type="submit" class="btn-large teal darken-2 waves-effect waves-light">
+            <i class="material-icons left">person_add</i> Sign Up
+          </button>
+        </div>
+      </form>
+
+      <div class="center-align" style="margin-top: 20px;">
+        <p>Already have an account?
+          <a href="{% url 'reviews:login' %}" class="blue-text text-darken-2">Log in</a>
+        </p>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Error Toasts -->
 <script>
   document.addEventListener('DOMContentLoaded', function () {
+    M.updateTextFields();  // ensure labels float correctly
     {% if form.errors %}
       {% for field in form %}
         {% for error in field.errors %}

@@ -4,17 +4,9 @@ import re
 import random
 from bs4 import BeautifulSoup
 from textblob import TextBlob
-from django.contrib.auth import authenticate, login as auth_login, logout
-from django.contrib.auth.forms import UserCreationForm
-from django.contrib.auth.models import User
-from django.shortcuts import render, redirect, get_object_or_404
-from django.views.decorators.http import require_GET
-from django.http import JsonResponse
 from django.core.management.base import BaseCommand
 from reviews.models import Product, Review
-from reviews.views import scrape_gsmarena_reviews
 
-# ========== Utilities ==========
 
 def get_random_headers():
     USER_AGENTS = [
@@ -24,147 +16,13 @@ def get_random_headers():
     ]
     return {"User-Agent": random.choice(USER_AGENTS)}
 
-# ========== User Authentication ==========
-
-def user_login(request):
-    if request.method == "POST":
-        username = request.POST.get("username")
-        password = request.POST.get("password")
-        user = authenticate(request, username=username, password=password)
-        if user is not None:
-            auth_login(request, user)
-            return redirect("home")
-        else:
-            return render(request, "login.html", {"error": "Invalid username or password"})
-    return render(request, "login.html")
-
-def logout_view(request):
-    logout(request)
-    return redirect("reviews:home")
-
-def user_signup(request):
-    if request.method == "POST":
-        form = UserCreationForm(request.POST)
-        if form.is_valid():
-            user = form.save()
-            user.is_staff = True
-            user.save()
-            auth_login(request, user)
-            return redirect("reviews:home")
-        else:
-            return render(request, "signup.html", {"form": form, "error": "Please correct the errors below"})
-    else:
-        form = UserCreationForm()
-    return render(request, "signup.html", {"form": form})
-
-def signup(request):
-    if request.method == "POST":
-        form = SignUpForm(request.POST)
-        if form.is_valid():
-            user = form.save()
-            auth_login(request, user)
-            return redirect("home")
-    else:
-        form = SignUpForm()
-    return render(request, "signup.html", {"form": form})
-
-# ========== Product Logic ==========
-
-def get_content(url):
-    session = requests.Session()
-    session.headers.update(get_random_headers())
-    response = session.get(url)
-    return response.text if response.status_code == 200 else ""
-
-def extract_series(product_name, brand):
-    series_patterns = {
-        "Samsung": r"Galaxy (M|A|F|S|Z|Note|X)\\d+",
-        "Apple": r"iPhone \\d+|iPhone [A-Z]+",
-        "Huawei": r"Mate \\d+|P\\d+",
-        "Xiaomi": r"Redmi \\d+|Mi \\d+|Poco \\w+",
-        "Other": r"\\b(Watch|Tablet|Laptop)\\b"
-    }
-    pattern = series_patterns.get(brand, "")
-    match = re.search(pattern, product_name)
-    return match.group(0) if match else "Other"
-
-def extract_product_type(product_name):
-    product_patterns = {
-        "Phone": r"(iPhone|Galaxy|Redmi|Mate|P)\\s*\\d+",
-        "Tablet": r"(iPad|Tab|MatePad)",
-        "Laptop": r"(MacBook|MateBook|Mi Notebook)"
-    }
-    for category, pattern in product_patterns.items():
-        if re.search(pattern, product_name, re.IGNORECASE):
-            return category
-    return "Other"
-
-def scrape_products():
-    product_info_list = []
-    urls = {
-        "Samsung": "https://www.gsmarena.com/samsung-phones-9.php",
-        "Apple": "https://www.gsmarena.com/apple-phones-48.php",
-        "Huawei": "https://www.gsmarena.com/huawei-phones-58.php",
-        "Xiaomi": "https://www.gsmarena.com/xiaomi-phones-80.php"
-    }
-    for brand, url in urls.items():
-        html_content = get_content(url)
-        if not html_content:
-            continue
-        soup = BeautifulSoup(html_content, 'html.parser')
-        product_list_div = soup.find('div', class_='makers')
-        if not product_list_div:
-            continue
-        for item in product_list_div.find_all('li'):
-            link = item.find('a')
-            img_tag = item.find('img')
-            name_tag = item.find('span')
-            if link and img_tag and name_tag:
-                product_name = name_tag.text.strip()
-                image_url = img_tag['src']
-                product_link = "https://www.gsmarena.com/" + link['href']
-                product_series = extract_series(product_name, brand)
-                product_type = extract_product_type(product_name)
-                product_info_list.append({
-                    'name': product_name,
-                    'image_url': image_url,
-                    'link': product_link,
-                    'brand': brand,
-                    'series': product_series,
-                    'type': product_type
-                })
-    return product_info_list
-
-def products(request):
-    selected_brands = request.GET.getlist('brand')
-    selected_series = request.GET.getlist('series')
-    selected_types = request.GET.getlist('type')
-    products = Product.objects.all().order_by('name')
-    if selected_brands:
-        products = products.filter(brand__in=selected_brands)
-    if selected_series:
-        products = products.filter(series__in=selected_series)
-    if selected_types:
-        products = products.filter(type__in=selected_types)
-    return render(request, 'products.html', {
-        'products': products,
-        'brands': Product.objects.values_list('brand', flat=True).distinct(),
-        'series': Product.objects.values_list('series', flat=True).distinct(),
-        'types': Product.objects.values_list('type', flat=True).distinct(),
-        'selected_brands': selected_brands,
-        'selected_series': selected_series,
-        'selected_types': selected_types,
-    })
-
-def index(request):
-    return render(request, 'home.html')
 
 def scrape_gsmarena_reviews(product_url, product_obj):
-    print(f"Scraping reviews from: {product_url}")
+    print(f"Scraping reviews from GSM Arena: {product_url}")
     response = requests.get(product_url, headers=get_random_headers())
-    time.sleep(random.uniform(2, 5))
+
     if response.status_code != 200:
-        return []
+        return
     soup = BeautifulSoup(response.text, 'html.parser')
     comments_section = soup.find('div', id='user-comments')
     threads = comments_section.find_all('div', class_='user-thread') if comments_section else []
@@ -176,42 +34,139 @@ def scrape_gsmarena_reviews(product_url, product_obj):
         if not Review.objects.filter(product=product_obj, username=username, comment=comment).exists():
             Review.objects.create(product=product_obj, username=username, comment=comment)
 
-def product_detail(request, product_id):
-    product = get_object_or_404(Product, id=product_id)
-    reviews = Review.objects.filter(product=product)
-    return render(request, 'product_detail.html', {'product': product, 'reviews': reviews})
 
-def product_detail_ajax(request):
-    product_url = request.GET.get('url')
-    product = Product.objects.filter(product_link=product_url).first()
-    if not product:
-        return JsonResponse({'error': 'Product not found!'}, status=404)
-    reviews = Review.objects.filter(product=product)
-    comments = [{'username': r.username, 'comment': r.comment} for r in reviews]
-    return JsonResponse({
-        'name': product.name,
-        'brand': product.brand,
-        'series': product.series,
-        'type': product.type,
-        'rating': 'N/A',
-        'specs': 'Specs info if you want to add',
-        'ai_rating': '4.5',
-        'comments': comments
-    })
+def scrape_phonearena_reviews(phonearena_url, product_obj):
+    print(f"Scraping PhoneArena reviews from: {phonearena_url}")
+    response = requests.get(phonearena_url, headers=get_random_headers())
 
-@require_GET
-def autocomplete(request):
-    query = request.GET.get('query', '').strip()
-    matching_products = Product.objects.filter(name__icontains=query).values_list('name', flat=True)
-    return JsonResponse(list(matching_products), safe=False)
+    if response.status_code != 200:
+        print(f"❌ PhoneArena page failed: {response.status_code}")
+        return
+    soup = BeautifulSoup(response.text, 'html.parser')
+    comment_blocks = soup.find_all("div", class_="components-MessageLayout-index__message-view")
+    for block in comment_blocks:
+        username_tag = block.find("span", {"data-spot-im-class": "message-username"})
+        comment_tag = block.find("div", {"data-spot-im-class": "message-text"})
+        username = username_tag.get_text(strip=True) if username_tag else "Anonymous"
+        comment = comment_tag.get_text(strip=True) if comment_tag else ""
+        if comment and not Review.objects.filter(product=product_obj, username=username, comment=comment).exists():
+            Review.objects.create(product=product_obj, username=username, comment=comment)
+            print(f"✅ PhoneArena comment by {username}: {comment[:60]}...")
 
 
-from django.core.management.base import BaseCommand
-from reviews.models import Product
-from reviews.views import scrape_gsmarena_reviews
+def scrape_additional_specs(product_url, product_obj):
+    headers = get_random_headers()
+    response = requests.get(product_url, headers=headers)
+
+
+    if response.status_code != 200:
+        return
+
+    soup = BeautifulSoup(response.text, 'html.parser')
+
+    specs = {
+        'display_size': None,
+        'battery': None,
+        'chipset': None,
+        'memory': None,
+        'camera': None,
+    }
+
+    spec_table = soup.find('div', class_='specs-list')
+    if spec_table:
+        rows = spec_table.find_all('tr')
+        for row in rows:
+            th = row.find('th')
+            td = row.find('td')
+            if th and td:
+                key = th.text.strip().lower()
+                value = td.text.strip()
+
+                if 'display' in key:
+                    specs['display_size'] = value
+                elif 'battery' in key:
+                    specs['battery'] = value
+                elif 'chipset' in key or 'processor' in key:
+                    specs['chipset'] = value
+                elif 'memory' in key or 'storage' in key:
+                    specs['memory'] = value
+                elif 'camera' in key:
+                    specs['camera'] = value
+
+    Product.objects.filter(id=product_obj.id).update(
+        display_size=specs['display_size'],
+        battery=specs['battery'],
+        chipset=specs['chipset'],
+        memory=specs['memory'],
+        camera=specs['camera']
+    )
+
+    print(f"✅ Updated GSM Arena specs for {product_obj.name}")
+
+
+def scrape_phonearena_specs(phonearena_url, product_obj):
+    print(f"🔍 Scraping PhoneArena specs from: {phonearena_url}")
+    headers = get_random_headers()
+    response = requests.get(phonearena_url, headers=headers)
+
+
+    if response.status_code != 200:
+        print(f"❌ Failed to load PhoneArena page: {response.status_code}")
+        return
+
+    soup = BeautifulSoup(response.text, "html.parser")
+
+    specs = {
+        'display_size': None,
+        'battery': None,
+        'chipset': None,
+        'memory': None,
+        'camera': None,
+    }
+
+    spec_sections = soup.find_all('div', class_='s_specs_box')
+    for section in spec_sections:
+        title_div = section.find('div', class_='s_specs_title')
+        if not title_div:
+            continue
+        title = title_div.text.strip().lower()
+
+        rows = section.find_all('li')
+        for row in rows:
+            label = row.find('span', class_='s_specs_label')
+            value = row.find('span', class_='s_specs_value')
+
+            if not label or not value:
+                continue
+
+            label_text = label.text.strip().lower()
+            value_text = value.text.strip()
+
+            if 'display' in title and not specs['display_size']:
+                specs['display_size'] = value_text
+            elif 'battery' in title and not specs['battery']:
+                specs['battery'] = value_text
+            elif 'hardware' in title:
+                if 'chipset' in label_text:
+                    specs['chipset'] = value_text
+                elif 'ram' in label_text or 'storage' in label_text:
+                    specs['memory'] = value_text
+            elif 'camera' in title and not specs['camera']:
+                specs['camera'] = value_text
+
+    Product.objects.filter(id=product_obj.id).update(
+        display_size=specs['display_size'],
+        battery=specs['battery'],
+        chipset=specs['chipset'],
+        memory=specs['memory'],
+        camera=specs['camera'],
+    )
+
+    print(f"✅ Updated PhoneArena specs for {product_obj.name}")
+
 
 class Command(BaseCommand):
-    help = "Scrape GSM Arena reviews for all products."
+    help = "Scrape reviews and specs from GSM Arena and PhoneArena for all products."
 
     def handle(self, *args, **kwargs):
         products = Product.objects.all()
@@ -219,13 +174,27 @@ class Command(BaseCommand):
 
         for product in products:
             if not product.product_link:
-                self.stdout.write(self.style.WARNING(f"⚠️ Skipping {product.name}: No product link"))
+                self.stdout.write(self.style.WARNING(f"⚠️ Skipping {product.name}: No GSM Arena link"))
                 continue
 
-            self.stdout.write(f"📱 Scraping GSM Arena reviews for {product.name}...")
+            self.stdout.write(f"📱 Scraping reviews for {product.name}...")
 
             try:
                 scrape_gsmarena_reviews(product.product_link, product)
+
+                if product.phonearena_link:
+                    scrape_phonearena_reviews(product.phonearena_link, product)
+                else:
+                    self.stdout.write(f"⚠️ No PhoneArena link for {product.name}, skipping PhoneArena scraping.")
+
+                if not product.display_size or not product.battery or not product.chipset:
+                    if product.product_link:
+                        scrape_additional_specs(product.product_link, product)
+                        product.refresh_from_db()
+                    if product.phonearena_link:
+                        scrape_phonearena_specs(product.phonearena_link, product)
+                        product.refresh_from_db()
+
                 self.stdout.write(self.style.SUCCESS(f"✅ Done with {product.name}\n"))
             except Exception as e:
                 self.stdout.write(self.style.ERROR(f"❌ Failed for {product.name}: {e}\n"))

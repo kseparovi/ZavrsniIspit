@@ -1,8 +1,8 @@
-# models.py
 from django.db import models
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
 from textblob import TextBlob
 
+User = get_user_model()
 
 class Product(models.Model):
     name = models.CharField(max_length=255)
@@ -12,12 +12,10 @@ class Product(models.Model):
     image_url = models.URLField(blank=True, null=True)
     product_link = models.URLField(blank=True, null=True)
     phonearena_link = models.URLField(blank=True, null=True)
-    ai_rating = models.FloatField(blank=True, null=True)  # 👈 Add this
+    ai_rating = models.FloatField(blank=True, null=True)
+    external_id = models.CharField(max_length=255, blank=True, null=True, unique=True)
 
-    external_id = models.CharField(max_length=255, blank=True, null=True, unique=True)  # 👈 Add this
-
-
-    # Product specifications fields
+    # Specifikacije proizvoda
     dimensions = models.CharField(max_length=255, blank=True, null=True)
     os = models.CharField(max_length=255, blank=True, null=True)
     display_size = models.CharField(max_length=255, blank=True, null=True)
@@ -26,18 +24,18 @@ class Product(models.Model):
     memory = models.CharField(max_length=255, blank=True, null=True)
     camera = models.CharField(max_length=255, blank=True, null=True)
 
+
     @property
     def ai_rating_calculated(self):
-        from .models import ProductReview
         reviews = ProductReview.objects.filter(product=self)
-        if not reviews:
+        if not reviews.exists():
             return 5.0
         total_score = 0
         count = 0
         for review in reviews:
             if review.comment:
                 polarity = TextBlob(review.comment).sentiment.polarity
-                score = (polarity + 1) * 5
+                score = (polarity + 1) * 5  # Skala od 0–10
                 total_score += score
                 count += 1
         return round(total_score / count, 1) if count else 5.0
@@ -46,18 +44,17 @@ class Product(models.Model):
         return self.name
 
 class ProductReview(models.Model):
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='reviews')
     username = models.CharField(max_length=255, default="Anonymous")
-    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)  # ✅ Add this line
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
     comment = models.TextField()
     rating = models.IntegerField(null=True, blank=True)
 
     def __str__(self):
-        return f"Review by {self.username}"
-
+        return f"Review by {self.username} on {self.product.name}"
 
 class Review(models.Model):
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='detailed_reviews')
     username = models.CharField(max_length=255, blank=True, null=True)
     title = models.CharField(max_length=255, blank=True, null=True)
     comment = models.TextField(blank=True, null=True)
@@ -65,9 +62,8 @@ class Review(models.Model):
     rating = models.IntegerField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
-def __str__(self):
-    return self.title or self.comment or f"Review by {self.username}"
-
+    def __str__(self):
+        return self.title or f"Review by {self.username} on {self.product.name}"
 
 class Comment(models.Model):
     review = models.ForeignKey(Review, on_delete=models.CASCADE, related_name='comments')
@@ -76,16 +72,16 @@ class Comment(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return self.content[:50]
+        return f"Comment by {self.user.username} on {self.review.title}"
 
 class ReviewRating(models.Model):
-    review = models.ForeignKey(Review, on_delete=models.CASCADE)
+    review = models.ForeignKey(Review, on_delete=models.CASCADE, related_name='ratings')
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     is_helpful = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f'{self.user.username} - {self.review.title}'
+        return f"Rating by {self.user.username} on {self.review.title}"
 
 class Comparison(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -93,7 +89,7 @@ class Comparison(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f'Comparison by {self.user.username}'
+        return f"Comparison by {self.user.username}"
 
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -102,7 +98,3 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return self.user.username
-
-# Command to run after editing this file:
-# python manage.py makemigrations
-# python manage.py migrate

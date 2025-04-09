@@ -18,3 +18,5 @@ def analyze_sentiment_score(reviews):
                 count += 1
 
         return round(total_score / count, 1) if count else 5.0
+
+

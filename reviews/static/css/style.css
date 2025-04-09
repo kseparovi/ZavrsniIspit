@@ -40,6 +40,23 @@ p {
 }
 
 
+/* Add this to your CSS file */
+.dark-mode {
+  background-color: #121212;
+  color: #ffffff;
+}
+
+.dark-mode .card {
+  background-color: #1e1e1e;
+  color: #ffffff;
+}
+
+.dark-mode .btn {
+  background-color: #333333;
+  color: #ffffff;
+}
+
+
 
 
 .parallax-container .section {

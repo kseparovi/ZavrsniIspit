@@ -3,54 +3,62 @@
 {% block title %}Login | Product Reviews{% endblock %}
 
 {% block content %}
-<div class="container" style="margin-top: 100px;">
+<div class="container" style="margin-top: 80px;">
   <div class="row">
-    <!-- Left column for login form -->
-    <div class="col s12 m6 offset-m3">
-      <div class="card">
+    <!-- Login Card -->
+    <div class="col s12 m8 offset-m2 l6 offset-l3">
+      <div class="card z-depth-3">
         <div class="card-content">
-          <span class="card-title center-align">Login</span>
+          <h5 class="center-align">
+            <i class="material-icons medium teal-text text-darken-2">account_circle</i><br>
+            Login to Your Account
+          </h5>
 
           {% if error %}
-            <p class="error" style="color: red; text-align: center;">{{ error }}</p>
+            <p class="red-text center-align" style="margin-top: 10px;">{{ error }}</p>
           {% endif %}
 
           <form method="post" action="{% url 'reviews:login' %}">
             {% csrf_token %}
+
             <!-- Username -->
             <div class="input-field">
+              <i class="material-icons prefix">person</i>
               <input id="username" name="username" type="text" class="validate" required>
               <label for="username">Username</label>
             </div>
 
             <!-- Password -->
             <div class="input-field">
+              <i class="material-icons prefix">lock</i>
               <input id="password" name="password" type="password" class="validate" required>
               <label for="password">Password</label>
             </div>
 
             <!-- Submit Button -->
-            <div class="center-align">
-              <button class="btn waves-effect waves-light" type="submit" name="action">Login
-                <i class="material-icons right">login</i>
+            <div class="center-align" style="margin-top: 30px;">
+              <button class="btn-large teal darken-2 waves-effect waves-light" type="submit" name="action">
+                Login <i class="material-icons right">login</i>
               </button>
             </div>
           </form>
         </div>
-      </div>
-    </div>
 
-    <!-- Right column for Signup Button -->
-    <div class="col s12 m3">
-      <div class="card">
-        <div class="card-content">
-          <span class="card-title center-align">New User?</span>
-          <div class="center-align">
-            <a href="{% url 'reviews:signup' %}" class="btn waves-effect waves-light">Sign Up</a>
-          </div>
+        <div class="card-action center-align">
+          <span>Don't have an account?</span>
+          <a href="{% url 'reviews:signup' %}" class="teal-text text-darken-2">Sign Up</a>
         </div>
       </div>
     </div>
   </div>
 </div>
+
+<!-- Optional Toast for JS-based errors -->
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    {% if error %}
+      M.toast({ html: '{{ error|escapejs }}', classes: 'red darken-2 white-text' });
+    {% endif %}
+  });
+</script>
 {% endblock %}
