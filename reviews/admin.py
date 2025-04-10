@@ -15,9 +15,11 @@ class ProductAdmin(admin.ModelAdmin):
 
 @admin.register(ProductReview)
 class ProductReviewAdmin(admin.ModelAdmin):
-    list_display = ('product', 'username', 'rating', 'comment')
-    search_fields = ('product__name', 'username')
+    list_display = ('product', 'username', 'rating', 'comment', 'sentiment_score', 'source_url')  # Add it here
+    search_fields = ('product__name', 'username', 'comment', 'source_url')
     list_filter = ('rating',)
+    fields = ('product', 'username', 'user', 'comment', 'rating', 'sentiment_score', 'source_url')
+    readonly_fields = ('sentiment_score',)
 
 
 @admin.register(UserProfile)

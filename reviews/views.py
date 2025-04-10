@@ -1,8 +1,10 @@
 import time
 import requests
 import re
-from bs4 import BeautifulSoup
 import random
+from bs4 import BeautifulSoup
+from textblob import TextBlob
+
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
@@ -11,10 +13,7 @@ from django.http import JsonResponse, HttpResponseForbidden
 from django.views.decorators.http import require_GET
 
 from .forms import SignUpForm, ProductReviewForm
-from .utils import analyze_sentiment_score
 from .models import Product, ProductReview, Review
-from textblob import TextBlob
-from .forms import SignUpForm
 
 
 def get_random_headers():
@@ -46,20 +45,17 @@ def logout_view(request):
     return redirect("reviews:home")
 
 
-from django.shortcuts import render, redirect
-from django.contrib.auth import login
-from .forms import SignUpForm
-
 def user_signup(request):
     if request.method == 'POST':
         form = SignUpForm(request.POST)
         if form.is_valid():
             user = form.save()
             login(request, user)
-            return redirect('reviews:home')  # Redirect to the homepage
+            return redirect('reviews:home')
     else:
         form = SignUpForm()
     return render(request, 'signup.html', {'form': form})
+
 
 def get_content(url):
     session = requests.Session()
@@ -70,11 +66,11 @@ def get_content(url):
 
 def extract_series(product_name, brand):
     series_patterns = {
-        "Samsung": r"Galaxy (M|A|F|S|Z|Note|X)\\d+",
-        "Apple": r"iPhone \\d+|iPhone [A-Z]+",
-        "Huawei": r"Mate \\d+|P\\d+",
-        "Xiaomi": r"Redmi \\d+|Mi \\d+|Poco \\w+",
-        "Other": r"\\b(Watch|Tablet|Laptop)\\b"
+        "Samsung": r"Galaxy (M|A|F|S|Z|Note|X)\d+",
+        "Apple": r"iPhone \d+|iPhone [A-Z]+",
+        "Huawei": r"Mate \d+|P\d+",
+        "Xiaomi": r"Redmi \d+|Mi \d+|Poco \w+",
+        "Other": r"\b(Watch|Tablet|Laptop)\b"
     }
     pattern = series_patterns.get(brand, "")
     match = re.search(pattern, product_name)
@@ -83,7 +79,7 @@ def extract_series(product_name, brand):
 
 def extract_product_type(product_name):
     product_patterns = {
-        "Phone": r"(iPhone|Galaxy|Redmi|Mate|P)\\s*\\d+",
+        "Phone": r"(iPhone|Galaxy|Redmi|Mate|P)\s*\d+",
         "Tablet": r"(iPad|Tab|MatePad)",
         "Laptop": r"(MacBook|MateBook|Mi Notebook)"
     }
@@ -109,7 +105,8 @@ def products(request):
 
     for product in products:
         reviews = ProductReview.objects.filter(product=product)
-        product.ai_rating = analyze_sentiment_score(reviews)
+        comments = [{"comment": r.comment} for r in reviews]
+        product.ai_rating = analyze_sentiment(comments)
 
     context = {
         'products': products,
@@ -145,31 +142,57 @@ def autocomplete(request):
     return JsonResponse(list(matching_products), safe=False)
 
 
+
+
+
 def analyze_sentiment(comments):
     total_score = 0
     count = 0
-
     for comment in comments:
         sentiment = TextBlob(comment["comment"]).sentiment.polarity
+        if -0.1 <= sentiment <= 0.1:
+            continue
         rating = round((sentiment + 1) * 2.5, 1)
         total_score += rating
         count += 1
-
     return round(total_score / count, 1) if count else 2.5
+
+
+
+def analyze_sentiment_with_breakdown(comments):
+    total_score = 0
+    count = 0
+    stats = {"positive": 0, "negative": 0, "neutral": 0}
+
+    for comment in comments:
+        polarity = TextBlob(comment["comment"]).sentiment.polarity
+
+        if polarity > 0.1:
+            stats["positive"] += 1
+            rating = 5.0
+        elif polarity < -0.1:
+            stats["negative"] += 1
+            rating = 0.0
+        else:
+            stats["neutral"] += 1
+            continue
+
+        total_score += rating
+        count += 1
+
+    avg_rating = round((total_score / count) * 2, 1) if count else 2.5  # scale to 10
+    return avg_rating, stats
+
+
 
 def product_detail(request, product_id):
     product = get_object_or_404(Product, id=product_id)
 
-    # Scrape missing specs from GSM Arena and/or PhoneArena
     if not product.display_size or not product.battery or not product.chipset:
         if product.product_link:
             scrape_additional_specs(product.product_link, product)
             product.refresh_from_db()
-        if product.phonearena_link:
-            scrape_phonearena_specs(product.phonearena_link, product)
-            product.refresh_from_db()
 
-    # Review form logic
     if request.method == "POST":
         form = ProductReviewForm(request.POST)
         if form.is_valid():
@@ -183,28 +206,27 @@ def product_detail(request, product_id):
         form = ProductReviewForm()
 
     reviews = ProductReview.objects.filter(product=product)
-    external_reviews = []
+    comments = [{"comment": r.comment} for r in reviews]
+    ai_rating, sentiment_stats = analyze_sentiment_with_breakdown(comments)
 
     return render(request, 'product_detail.html', {
         'product': product,
         'reviews': reviews,
-        'external_reviews': external_reviews,
+        'external_reviews': [],
         'form': form,
-        'ai_rating': product.ai_rating_calculated,
+        'ai_rating': ai_rating,
+        'sentiment_stats': sentiment_stats,
     })
+
 
 @login_required
 def delete_review(request, review_id):
     review = get_object_or_404(ProductReview, id=review_id)
-
-    # Only allow deletion if it's user-created and belongs to the current user
     if review.user != request.user or review.user is None:
         return HttpResponseForbidden("You are not allowed to delete this review.")
-
     product_id = review.product.id
     review.delete()
     return redirect("reviews:product_detail", product_id=product_id)
-
 
 
 def scrape_additional_specs(product_url, product_obj):
@@ -255,64 +277,3 @@ def scrape_additional_specs(product_url, product_obj):
     )
 
     print(f"Updated specs for {product_obj.name}")
-
-
-def scrape_phonearena_specs(phonearena_url, product_obj):
-    print(f"🔍 Scraping PhoneArena specs from: {phonearena_url}")
-    headers = get_random_headers()
-    response = requests.get(phonearena_url, headers=headers)
-    time.sleep(random.uniform(2, 4))
-
-    if response.status_code != 200:
-        print(f"❌ Failed to load PhoneArena page: {response.status_code}")
-        return
-
-    soup = BeautifulSoup(response.text, "html.parser")
-
-    specs = {
-        'display_size': None,
-        'battery': None,
-        'chipset': None,
-        'memory': None,
-        'camera': None,
-    }
-
-    spec_sections = soup.find_all('div', class_='s_specs_box')
-    for section in spec_sections:
-        title_div = section.find('div', class_='s_specs_title')
-        if not title_div:
-            continue
-        title = title_div.text.strip().lower()
-
-        rows = section.find_all('li')
-        for row in rows:
-            label = row.find('span', class_='s_specs_label')
-            value = row.find('span', class_='s_specs_value')
-
-            if not label or not value:
-                continue
-
-            label_text = label.text.strip().lower()
-            value_text = value.text.strip()
-
-            if 'display' in title and not specs['display_size']:
-                specs['display_size'] = value_text
-            elif 'battery' in title and not specs['battery']:
-                specs['battery'] = value_text
-            elif 'hardware' in title:
-                if 'chipset' in label_text:
-                    specs['chipset'] = value_text
-                elif 'ram' in label_text or 'storage' in label_text:
-                    specs['memory'] = value_text
-            elif 'camera' in title and not specs['camera']:
-                specs['camera'] = value_text
-
-    Product.objects.filter(id=product_obj.id).update(
-        display_size=specs['display_size'],
-        battery=specs['battery'],
-        chipset=specs['chipset'],
-        memory=specs['memory'],
-        camera=specs['camera'],
-    )
-
-    print(f"✅ Updated PhoneArena specs for {product_obj.name}")

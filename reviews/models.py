@@ -49,6 +49,15 @@ class ProductReview(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
     comment = models.TextField()
     rating = models.IntegerField(null=True, blank=True)
+    sentiment_score = models.FloatField(null=True, blank=True)
+    source_url = models.URLField(blank=True, null=True)  # 🔥 Add this line
+
+    def save(self, *args, **kwargs):
+        if self.comment:
+            polarity = TextBlob(self.comment).sentiment.polarity
+            self.sentiment_score = round((polarity + 1) * 5, 2)
+            self.rating = round((polarity + 1) * 5)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"Review by {self.username} on {self.product.name}"
@@ -61,9 +70,11 @@ class Review(models.Model):
     content = models.TextField(blank=True, null=True)
     rating = models.IntegerField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    source_url = models.URLField(blank=True, null=True)  # ✅ Add this
 
     def __str__(self):
         return self.title or f"Review by {self.username} on {self.product.name}"
+
 
 class Comment(models.Model):
     review = models.ForeignKey(Review, on_delete=models.CASCADE, related_name='comments')

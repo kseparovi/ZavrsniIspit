@@ -8,7 +8,7 @@
     <div class="col s12 m10 offset-m1">
       <div class="card z-depth-2">
         <div class="card-content">
-        <h4 class="center-align">{{ product.brand }}</h4>
+          <h4 class="center-align">{{ product.brand }}</h4>
           <h4 class="center-align">{{ product.name }}</h4>
 
           <div class="center-align">
@@ -16,20 +16,19 @@
           </div>
 
           <ul class="collection">
-              🔗 <a href="{{ product.product_link }}" target="_blank">View on GSMArena</a>
-              {% if product.phonearena_link %}
-                <br>🔗 <a href="{{ product.phonearena_link }}" target="_blank">View on PhoneArena</a>
-              {% endif %}
-            </li>
+            🔗 <a href="{{ product.product_link }}" target="_blank">View on GSMArena</a>
+            {% if product.phonearena_link %}
+              <br>🔗 <a href="{{ product.phonearena_link }}" target="_blank">View on PhoneArena</a>
+            {% endif %}
           </ul>
 
-          {% if product.ai_rating_calculated is not None %}
+          {% if ai_rating is not None %}
             <div class="center-align">
               <p class="green-text" style="font-size: 20px;">
-                🤖 AI Rating: <strong>{{ product.ai_rating_calculated }} / 10</strong>
+                🤖 AI Rating: <strong>{{ ai_rating }} / 10</strong>
               </p>
               <div style="font-size: 24px; color: gold;">
-                {% with full_stars=product.ai_rating_calculated|floatformat:0 %}
+                {% with full_stars=ai_rating|floatformat:0 %}
                   {% for i in "0123456789" %}
                     {% if forloop.counter <= full_stars|add:0 %}
                       ★
@@ -38,6 +37,13 @@
                     {% endif %}
                   {% endfor %}
                 {% endwith %}
+              </div>
+
+              <div style="margin-top: 15px; font-size: 16px;">
+                🧠 <strong>Sentiment Breakdown:</strong><br>
+                ✅ Positive: <strong>{{ sentiment_stats.positive }}</strong><br>
+                ❌ Negative: <strong>{{ sentiment_stats.negative }}</strong><br>
+                😐 Neutral: <strong>{{ sentiment_stats.neutral }}</strong>
               </div>
             </div>
           {% endif %}
@@ -84,12 +90,10 @@
             <form method="post">
               {% csrf_token %}
               <div class="input-field">
-                <i class="material-icons prefix"></i>
+                <i class="material-icons prefix">comment</i>
                 {{ form.comment.label_tag }}
                 {{ form.comment }}
               </div>
-
-
 
               <div class="center-align" style="margin-top: 20px;">
                 <button class="btn-large teal darken-2 waves-effect waves-light" type="submit">

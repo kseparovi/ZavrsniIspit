@@ -38,12 +38,10 @@ Aplikacija će biti dostupna na `http://127.0.0.1:8000/`
 Web scraping se izvodi pomoću **BeautifulSoup** biblioteke. Skripte za scraping dohvaćaju recenzije s web stranica poput:
 - [GSMArena](https://www.gsmarena.com/)
 - [PhoneArena](https://www.phonearena.com/)
-- [TechRadar](https://www.techradar.com/)
-
+- 
 Svaka skripta izdvaja:
 - Tekst recenzije
 - Numeričku ocjenu
-- Datum recenzije (ako je dostupan)
 - Korisničko ime (ako je dostupno)
 
 ## Normalizacija Recenzija
