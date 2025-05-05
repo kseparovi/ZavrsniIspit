@@ -58,7 +58,6 @@ def scrape_additional_specs(product_url, product_obj):
     headers = get_random_headers()
     response = requests.get(product_url, headers=headers)
 
-
     if response.status_code != 200:
         return
 
@@ -108,7 +107,6 @@ def scrape_phonearena_specs(phonearena_url, product_obj):
     print(f"🔍 Scraping PhoneArena specs from: {phonearena_url}")
     headers = get_random_headers()
     response = requests.get(phonearena_url, headers=headers)
-
 
     if response.status_code != 200:
         print(f"❌ Failed to load PhoneArena page: {response.status_code}")
@@ -165,8 +163,67 @@ def scrape_phonearena_specs(phonearena_url, product_obj):
     print(f"✅ Updated PhoneArena specs for {product_obj.name}")
 
 
+# Enhanced Amazon scraper with fallback and logging
+def scrape_amazon_reviews(product_url, product_obj):
+    print(f"Scraping Amazon reviews from: {product_url}")
+
+    headers = get_random_headers()
+
+    try:
+        response = requests.get(product_url, headers=headers)
+        if response.status_code != 200:
+            print(f"❌ Amazon page failed: {response.status_code}")
+            return
+
+        soup = BeautifulSoup(response.text, 'html.parser')
+        reviews = soup.find_all("li", {"data-hook": "review"})
+
+        if not reviews:
+            print(f"⚠️ No reviews found on Amazon page: {product_url}")
+            return
+
+        for review in reviews:
+            try:
+                username_tag = review.find("span", class_="a-profile-name")
+                rating_tag = review.find("i", {"data-hook": "review-star-rating"})
+                title_tag = review.find("a", {"data-hook": "review-title"})
+                body_tag = review.find("span", {"data-hook": "review-body"})
+                date_tag = review.find("span", {"data-hook": "review-date"})
+
+                if not all([username_tag, rating_tag, title_tag, body_tag]):
+                    continue
+
+                username = username_tag.get_text(strip=True)
+                rating_text = rating_tag.find("span").text
+                rating = float(rating_text.split(" ")[0])
+                title = title_tag.find("span").text.strip()
+                body = body_tag.get_text(strip=True)
+                date = date_tag.get_text(strip=True) if date_tag else ""
+
+                if Review.objects.filter(product=product_obj, username=username, comment=body).exists():
+                    continue
+
+                Review.objects.create(
+                    product=product_obj,
+                    username=username,
+                    title=title,
+                    comment=body,
+                    source_url=product_url
+                )
+
+                print(f"✅ Amazon review by {username}: {title[:30]}...")
+
+            except Exception as parse_error:
+                print(f"⚠️ Parsing error on one review: {parse_error}")
+
+    except Exception as fetch_error:
+        print(f"❌ Failed to fetch Amazon page: {fetch_error}")
+
+
+from reviews.utils import sync_reviews_to_product_reviews
+
 class Command(BaseCommand):
-    help = "Scrape reviews and specs from GSM Arena and PhoneArena for all products."
+    help = "Scrape reviews and specs from GSM Arena, PhoneArena, and Amazon for all products."
 
     def handle(self, *args, **kwargs):
         products = Product.objects.all()
@@ -187,6 +244,11 @@ class Command(BaseCommand):
                 else:
                     self.stdout.write(f"⚠️ No PhoneArena link for {product.name}, skipping PhoneArena scraping.")
 
+                if hasattr(product, 'amazon_link') and product.amazon_link:
+                    scrape_amazon_reviews(product.amazon_link, product)
+                else:
+                    self.stdout.write(f"⚠️ No Amazon link for {product.name}, skipping Amazon scraping.")
+
                 if not product.display_size or not product.battery or not product.chipset:
                     if product.product_link:
                         scrape_additional_specs(product.product_link, product)
@@ -196,7 +258,10 @@ class Command(BaseCommand):
                         product.refresh_from_db()
 
                 self.stdout.write(self.style.SUCCESS(f"✅ Done with {product.name}\n"))
-            except Exception as e:
-                self.stdout.write(self.style.ERROR(f"❌ Failed for {product.name}: {e}\n"))
 
-        self.stdout.write(self.style.SUCCESS("✅ All products processed."))
+            except Exception as e:
+                self.stdout.write(self.style.ERROR(f"❌ Error while scraping {product.name}: {e}"))
+
+        self.stdout.write("🔄 Syncing into ProductReview...")
+        sync_reviews_to_product_reviews()
+        self.stdout.write(self.style.SUCCESS("✅ All products scraped successfully!"))

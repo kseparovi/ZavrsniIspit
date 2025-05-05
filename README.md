@@ -53,3 +53,50 @@ Prikupljene recenzije se spremaju u bazu i prikazuju na web stranici, omogućuju
 ## Kontakt
 Za više informacija, kontaktirajte autora projekta putem e-maila: **kseparovi@student.unizd.hr**.
 
+
+
+## NLP
+
+Većina NLP alata koristi ove klasifikacije:
+✅ Binarna klasifikacija
+
+    Positive
+
+    Negative
+
+Primjer: TextBlob koristi polarity skor od -1 do 1, gdje je sve ispod 0 negativno, a iznad pozitivno.
+
+
+✅ Ternarna klasifikacija
+
+    Positive
+
+    Neutral
+
+    Negative
+
+Primjer: VADER (iz NLTK) koristi compound vrijednost:
+
+    >= 0.05: pozitivno
+
+    <= -0.05: negativno
+
+    između: neutralno
+
+✅ Ordinalna klasifikacija (1–5 zvjezdica)
+
+Koriste je modeli kao nlptown/bert-base-multilingual-uncased-sentiment (na HuggingFace):
+
+    1 star = vrlo negativno
+
+    3 stars = neutralno
+
+    5 stars = vrlo pozitivno
+
+
+
+## Crontab skripta
+crontab -e
+0 12 * * * /home/pakel/PycharmProjects/ZavrsniIspit/.venv/bin/python /home/pakel/Desktop/ZavrsniIspit/manage.py scrape_reviews >> /home/pakel/Desktop/ZavrsniIspit/logs/scrape.log 2>&1
+
+Ova linija će pokrenuti Django skriptu `scrape_reviews` svaki dan u 12:00 sati. Rezultati će biti spremljeni u `scrape.log` datoteku, a svi errori će biti preusmjereni u istu datoteku.

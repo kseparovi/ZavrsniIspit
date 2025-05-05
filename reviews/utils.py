@@ -20,3 +20,19 @@ def analyze_sentiment_score(reviews):
         return round(total_score / count, 1) if count else 5.0
 
 
+# reviews/utils.py
+def sync_reviews_to_product_reviews():
+    from reviews.models import Review, ProductReview
+    new_count = 0
+
+    for review in Review.objects.all():
+        if not ProductReview.objects.filter(product=review.product, username=review.username, comment=review.comment).exists():
+            ProductReview.objects.create(
+                product=review.product,
+                username=review.username,
+                comment=review.comment,
+                source_url=review.source_url
+            )
+            new_count += 1
+
+    print(f"✅ Synced {new_count} reviews into ProductReview.")

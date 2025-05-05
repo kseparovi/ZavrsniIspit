@@ -12,8 +12,8 @@ class Product(models.Model):
     image_url = models.URLField(blank=True, null=True)
     product_link = models.URLField(blank=True, null=True)
     phonearena_link = models.URLField(blank=True, null=True)
+    amazon_link = models.URLField(blank=True, null=True)  # ⬅️ Add this
     ai_rating = models.FloatField(blank=True, null=True)
-    external_id = models.CharField(max_length=255, blank=True, null=True, unique=True)
 
     # Specifikacije proizvoda
     dimensions = models.CharField(max_length=255, blank=True, null=True)
@@ -43,6 +43,11 @@ class Product(models.Model):
     def __str__(self):
         return self.name
 
+
+
+from transformers import pipeline
+bert_analyzer = pipeline("sentiment-analysis")
+
 class ProductReview(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='reviews')
     username = models.CharField(max_length=255, default="Anonymous")
@@ -51,12 +56,30 @@ class ProductReview(models.Model):
     rating = models.IntegerField(null=True, blank=True)
     sentiment_score = models.FloatField(null=True, blank=True)
     source_url = models.URLField(blank=True, null=True)  # 🔥 Add this line
+    # models.py
+    bert_sentiment_label = models.CharField(max_length=20, null=True, blank=True)  # npr. 'POSITIVE'
+    bert_sentiment_score = models.FloatField(null=True, blank=True)
+
+    textblob_sentiment_score = models.FloatField(null=True, blank=True)  # npr. polarity -1 to 1
 
     def save(self, *args, **kwargs):
         if self.comment:
-            polarity = TextBlob(self.comment).sentiment.polarity
-            self.sentiment_score = round((polarity + 1) * 5, 2)
-            self.rating = round((polarity + 1) * 5)
+            # ✅ TextBlob sentiment
+            tb_polarity = TextBlob(self.comment).sentiment.polarity
+            self.textblob_sentiment_score = tb_polarity
+            self.sentiment_score = round((tb_polarity + 1) * 5, 2)
+            self.rating = round((tb_polarity + 1) * 5)
+
+            # ✅ BERT sentiment
+            try:
+                bert_result = bert_analyzer(self.comment[:512])  # BERT limit
+                self.bert_sentiment_label = bert_result[0]['label']
+                self.bert_sentiment_score = round(bert_result[0]['score'], 3)
+            except Exception as e:
+                print(f"BERT error: {e}")
+                self.bert_sentiment_label = None
+                self.bert_sentiment_score = None
+
         super().save(*args, **kwargs)
 
     def __str__(self):
