@@ -108,7 +108,8 @@ def products(request):
     for product in products:
         reviews = ProductReview.objects.filter(product=product)
         comments = [{"comment": r.comment} for r in reviews]
-        product.ai_rating = analyze_sentiment(comments)
+        product.ai_rating = analyze_sentiment(comments) * 2  # skaliraj na 0–10
+
 
     context = {
         'products': products,

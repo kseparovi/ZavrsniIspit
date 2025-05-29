@@ -85,8 +85,9 @@ def count_sentiments(reviews):
         else:
             counts["neutral"] += 1
     return counts
-from textblob import TextBlob
-from transformers import pipeline
+
+bert_analyzer = pipeline("sentiment-analysis")
+
 
 bert_analyzer = pipeline("sentiment-analysis")
 
@@ -97,14 +98,14 @@ def analyze_sentiment(text):
     bert_label = bert_result["label"]
     bert_score = round(bert_result["score"], 3)
 
-    # AI kombinirana ocjena
-    sentiment_score = round((tb_score + 1) * 5, 2)  # skala 0–10
-    rating = round(sentiment_score / 2, 2)  # skala 0–5
+    # AI kombinirana ocjena — skala 0–5
+    sentiment_score = round((tb_score + 1) * 2.5, 2)
+    rating = sentiment_score  # ako koristiš istu vrijednost
 
     return {
         "textblob_sentiment_score": tb_score,
-        "sentiment_score": sentiment_score,
-        "rating": rating,
+        "sentiment_score": sentiment_score,  # 0–5
+        "rating": rating,                    # 0–5
         "bert_sentiment_label": bert_label,
         "bert_sentiment_score": bert_score,
     }
