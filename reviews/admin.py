@@ -1,34 +1,51 @@
-from django.db import models
-from .models import Product, Review, Comment, ReviewRating, Comparison, UserProfile, ProductReview
 from django.contrib import admin
 
+from . import models
+from .models import (
+    Product, Review,
+    UserProfile, ProductReview
+)
 
-
-
+# Inline za Review (ako želiš prikaz unutar Product admina)
 class ReviewInline(admin.TabularInline):
     model = Review
     extra = 0
 
-
+# Inline za ProductReview (prikaz u Product adminu)
+class ProductReviewInline(admin.TabularInline):
+    model = ProductReview
+    extra = 0
+    readonly_fields = (
+        'bert_sentiment_label', 'bert_sentiment_score',
+        'textblob_sentiment_score', 'sentiment_score'
+    )
+    fields = (
+        'username', 'comment',
+        'bert_sentiment_label', 'bert_sentiment_score',
+        'textblob_sentiment_score'
+    )
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
     list_display = (
         'name', 'brand', 'series', 'type',
-        'ai_rating_display', 'num_reviews', 'num_positive', 'num_negative', 'num_neutral'
+        'ai_rating_display', 'num_reviews',
+        'num_positive', 'num_negative', 'num_neutral'
     )
     readonly_fields = ('ai_rating_display', 'sentiment_summary')
+    inlines = [ProductReviewInline, ReviewInline]  # Ako želiš oba
 
     fields = (
         'name', 'brand', 'series', 'type',
         'image_url', 'product_link', 'phonearena_link',
         'ai_rating', 'ai_rating_display', 'sentiment_summary',
-
     )
 
     def ai_rating_display(self, obj):
-        return obj.ai_rating or obj.ai_rating_calculated
-    ai_rating_display.short_description = "AI ocjena (1–10)"
+        raw_score = obj.ai_rating or obj.ai_rating_calculated
+        return round(raw_score / 2, 2)  # skalirano na 0–5
+
+    ai_rating_display.short_description = "AI ocjena (0–5)"
 
     def num_reviews(self, obj):
         return obj.reviews.count()
@@ -43,10 +60,8 @@ class ProductAdmin(admin.ModelAdmin):
     num_negative.short_description = "🔴 Negativne"
 
     def num_neutral(self, obj):
-        total = obj.reviews.count()
-        pos = self.num_positive(obj)
-        neg = self.num_negative(obj)
-        return total - pos - neg
+        total = self.num_reviews(obj)
+        return total - self.num_positive(obj) - self.num_negative(obj)
     num_neutral.short_description = "🟡 Neutralne"
 
     def sentiment_summary(self, obj):
@@ -55,18 +70,13 @@ class ProductAdmin(admin.ModelAdmin):
         if total == 0:
             return "📭 Nema recenzija"
 
-        bert_pos = self.num_positive(obj)
-        bert_neg = self.num_negative(obj)
-        neutral = total - bert_pos - bert_neg
-
-        avg_tb = reviews.aggregate(avg=models.Avg('textblob_sentiment_score'))['avg']
-        avg_bert = reviews.aggregate(avg=models.Avg('bert_sentiment_score'))['avg']
-
-        avg_tb_str = f"{round(avg_tb, 3)}" if avg_tb is not None else "?"
-        avg_bert_str = f"{round(avg_bert, 3)}" if avg_bert is not None else "?"
+        avg_tb = reviews.aggregate(models.Avg('textblob_sentiment_score'))['textblob_sentiment_score__avg']
+        avg_bert = reviews.aggregate(models.Avg('bert_sentiment_score'))['bert_sentiment_score__avg']
 
         return (
-            f"BERT: +{bert_pos}, –{bert_neg}, ≈{neutral} | "
-            f"TextBlob avg: {avg_tb_str} | BERT avg: {avg_bert_str}"
+            f"BERT: +{self.num_positive(obj)}, –{self.num_negative(obj)}, ≈{self.num_neutral(obj)} | "
+            f"TextBlob avg: {round(avg_tb, 3) if avg_tb is not None else '?'} | "
+            f"BERT avg: {round(avg_bert, 3) if avg_bert is not None else '?'}"
         )
     sentiment_summary.short_description = "🧠 Sentiment pregled"
+
