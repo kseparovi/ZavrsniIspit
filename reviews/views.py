@@ -4,6 +4,8 @@ import re
 import random
 from bs4 import BeautifulSoup
 from textblob import TextBlob
+from .utils import analyze_hybrid_sentiment, calculate_hybrid_rating, count_sentiments
+
 
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
@@ -159,39 +161,33 @@ def analyze_sentiment(comments):
 
 
 
-def analyze_sentiment_with_breakdown(comments):
+def analyze_sentiment_with_breakdown(reviews):
     total_score = 0
     count = 0
     stats = {"positive": 0, "negative": 0, "neutral": 0}
 
-    for comment in comments:
-        polarity = TextBlob(comment["comment"]).sentiment.polarity
+    for r in reviews:
+        polarity = r.textblob_sentiment_score
+        if polarity is None:
+            polarity = TextBlob(r.comment).sentiment.polarity
 
         if polarity > 0.1:
             stats["positive"] += 1
-            rating = 5.0
+            total_score += 5.0
         elif polarity < -0.1:
             stats["negative"] += 1
-            rating = 0.0
+            total_score += 0.0
         else:
             stats["neutral"] += 1
-            continue
+            total_score += 2.5
 
-        total_score += rating
         count += 1
 
-    avg_rating = round((total_score / count) * 2, 1) if count else 2.5  # scale to 10
+    avg_rating = round(total_score / count, 1) if count else 2.5
     return avg_rating, stats
-
-
 
 def product_detail(request, product_id):
     product = get_object_or_404(Product, id=product_id)
-
-    if not product.display_size or not product.battery or not product.chipset:
-        if product.product_link:
-            scrape_additional_specs(product.product_link, product)
-            product.refresh_from_db()
 
     if request.method == "POST":
         form = ProductReviewForm(request.POST)
@@ -206,8 +202,9 @@ def product_detail(request, product_id):
         form = ProductReviewForm()
 
     reviews = ProductReview.objects.filter(product=product)
-    comments = [{"comment": r.comment} for r in reviews]
-    ai_rating, sentiment_stats = analyze_sentiment_with_breakdown(comments)
+    ai_rating = calculate_hybrid_rating(reviews)  # koristi kombinaciju BERT + TextBlob
+    sentiment_stats = count_sentiments(reviews)
+    stars = int(round(ai_rating))  # Za prikaz zvjezdica 0–5
 
     return render(request, 'product_detail.html', {
         'product': product,
@@ -216,8 +213,8 @@ def product_detail(request, product_id):
         'form': form,
         'ai_rating': ai_rating,
         'sentiment_stats': sentiment_stats,
+        'stars': stars,
     })
-
 
 @login_required
 def delete_review(request, review_id):
@@ -227,53 +224,3 @@ def delete_review(request, review_id):
     product_id = review.product.id
     review.delete()
     return redirect("reviews:product_detail", product_id=product_id)
-
-
-def scrape_additional_specs(product_url, product_obj):
-    headers = get_random_headers()
-    response = requests.get(product_url, headers=headers)
-    time.sleep(random.uniform(2, 5))
-
-    if response.status_code != 200:
-        return
-
-    soup = BeautifulSoup(response.text, 'html.parser')
-
-    specs = {
-        'display_size': None,
-        'battery': None,
-        'chipset': None,
-        'memory': None,
-        'camera': None,
-    }
-
-    spec_table = soup.find('div', class_='specs-list')
-    if spec_table:
-        rows = spec_table.find_all('tr')
-        for row in rows:
-            th = row.find('th')
-            td = row.find('td')
-            if th and td:
-                key = th.text.strip().lower()
-                value = td.text.strip()
-
-                if 'display' in key:
-                    specs['display_size'] = value
-                elif 'battery' in key:
-                    specs['battery'] = value
-                elif 'chipset' in key or 'processor' in key:
-                    specs['chipset'] = value
-                elif 'memory' in key or 'storage' in key:
-                    specs['memory'] = value
-                elif 'camera' in key:
-                    specs['camera'] = value
-
-    Product.objects.filter(id=product_obj.id).update(
-        display_size=specs['display_size'],
-        battery=specs['battery'],
-        chipset=specs['chipset'],
-        memory=specs['memory'],
-        camera=specs['camera']
-    )
-
-    print(f"Updated specs for {product_obj.name}")

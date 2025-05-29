@@ -100,3 +100,13 @@ crontab -e
 0 12 * * * /home/pakel/PycharmProjects/ZavrsniIspit/.venv/bin/python /home/pakel/Desktop/ZavrsniIspit/manage.py scrape_reviews >> /home/pakel/Desktop/ZavrsniIspit/logs/scrape.log 2>&1
 
 Ova linija će pokrenuti Django skriptu `scrape_reviews` svaki dan u 12:00 sati. Rezultati će biti spremljeni u `scrape.log` datoteku, a svi errori će biti preusmjereni u istu datoteku.
+
+
+##
+Značajka	TextBlob	BERT (transformer)
+Metoda	Rječnik i pravila	Duboki učenje (transformers)
+Jezik	Samo engleski	Više jezika (multilingual)
+Output	polarity ∈ [-1, 1]	label ∈ [1–5 stars], score ∈ [0–1]
+Brzina	⚡️ Vrlo brzo	🐢 Sporije
+Točnost	Osnovna	Visoka (razumije kontekst i sarkazam)
+Računanje u projektu	(polarity + 1) * 5 → skala 0–10	koristiš kao label i score za dodatnu analizu

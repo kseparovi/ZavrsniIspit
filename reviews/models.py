@@ -1,8 +1,11 @@
 from django.db import models
 from django.contrib.auth import get_user_model
 from textblob import TextBlob
+from transformers import pipeline
 
 User = get_user_model()
+
+bert_analyzer = pipeline("sentiment-analysis")
 
 class Product(models.Model):
     name = models.CharField(max_length=255)
@@ -12,18 +15,7 @@ class Product(models.Model):
     image_url = models.URLField(blank=True, null=True)
     product_link = models.URLField(blank=True, null=True)
     phonearena_link = models.URLField(blank=True, null=True)
-    amazon_link = models.URLField(blank=True, null=True)  # ⬅️ Add this
     ai_rating = models.FloatField(blank=True, null=True)
-
-    # Specifikacije proizvoda
-    dimensions = models.CharField(max_length=255, blank=True, null=True)
-    os = models.CharField(max_length=255, blank=True, null=True)
-    display_size = models.CharField(max_length=255, blank=True, null=True)
-    chipset = models.CharField(max_length=255, blank=True, null=True)
-    battery = models.CharField(max_length=255, blank=True, null=True)
-    memory = models.CharField(max_length=255, blank=True, null=True)
-    camera = models.CharField(max_length=255, blank=True, null=True)
-
 
     @property
     def ai_rating_calculated(self):
@@ -43,11 +35,6 @@ class Product(models.Model):
     def __str__(self):
         return self.name
 
-
-
-from transformers import pipeline
-bert_analyzer = pipeline("sentiment-analysis")
-
 class ProductReview(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='reviews')
     username = models.CharField(max_length=255, default="Anonymous")
@@ -55,12 +42,17 @@ class ProductReview(models.Model):
     comment = models.TextField()
     rating = models.IntegerField(null=True, blank=True)
     sentiment_score = models.FloatField(null=True, blank=True)
-    source_url = models.URLField(blank=True, null=True)  # 🔥 Add this line
-    # models.py
-    bert_sentiment_label = models.CharField(max_length=20, null=True, blank=True)  # npr. 'POSITIVE'
+    source_url = models.URLField(blank=True, null=True)
+    bert_sentiment_label = models.CharField(max_length=20, null=True, blank=True)
     bert_sentiment_score = models.FloatField(null=True, blank=True)
-
-    textblob_sentiment_score = models.FloatField(null=True, blank=True)  # npr. polarity -1 to 1
+    textblob_sentiment_score = models.FloatField(null=True, blank=True)
+    manual_sentiment_override = models.CharField(
+        max_length=20,
+        choices=[("POSITIVE", "Positive"), ("NEGATIVE", "Negative"), ("NEUTRAL", "Neutral")],
+        blank=True,
+        null=True,
+        help_text="Optional manual override of BERT sentiment label."
+    )
 
     def save(self, *args, **kwargs):
         if self.comment:
@@ -81,7 +73,6 @@ class ProductReview(models.Model):
                 self.bert_sentiment_score = None
 
         super().save(*args, **kwargs)
-
     def __str__(self):
         return f"Review by {self.username} on {self.product.name}"
 
@@ -93,11 +84,10 @@ class Review(models.Model):
     content = models.TextField(blank=True, null=True)
     rating = models.IntegerField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
-    source_url = models.URLField(blank=True, null=True)  # ✅ Add this
+    source_url = models.URLField(blank=True, null=True)
 
     def __str__(self):
         return self.title or f"Review by {self.username} on {self.product.name}"
-
 
 class Comment(models.Model):
     review = models.ForeignKey(Review, on_delete=models.CASCADE, related_name='comments')

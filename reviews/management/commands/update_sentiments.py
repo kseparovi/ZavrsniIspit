@@ -4,8 +4,7 @@ from textblob import TextBlob
 from transformers import pipeline
 from tqdm import tqdm
 
-bert_analyzer = pipeline("sentiment-analysis", model="nlptown/bert-base-multilingual-uncased-sentiment")
-
+bert_analyzer = pipeline("sentiment-analysis", model="microsoft/deberta-v3-base", device=0)  # device=0 koristi prvi GPU
 class Command(BaseCommand):
     help = "Ažurira sentiment za sve recenzije i ponovno računa prosječnu ocjenu proizvoda."
 
@@ -23,21 +22,39 @@ class Command(BaseCommand):
             if not force and review.sentiment_score is not None:
                 continue
 
-            # TextBlob
-            polarity = TextBlob(review.comment).sentiment.polarity
-            review.textblob_sentiment_score = polarity
-            review.sentiment_score = round((polarity + 1) * 5, 2)
-            review.rating = round((polarity + 1) * 5)
-
-            # BERT
-            try:
-                result = bert_analyzer(review.comment[:512])[0]
-                review.bert_sentiment_label = result['label']
-                review.bert_sentiment_score = round(result['score'], 3)
-            except Exception as e:
-                self.stderr.write(f"BERT greška: {e}")
+            comment = review.comment.strip()
+            if len(comment) < 20:
+                # Prekratki komentari -> neutralno
+                review.sentiment_score = 5.0
+                review.rating = 3
                 review.bert_sentiment_label = None
                 review.bert_sentiment_score = None
+                review.textblob_sentiment_score = None
+            else:
+                # 🔍 TextBlob
+                tb_polarity = TextBlob(comment).sentiment.polarity
+                tb_score_scaled = (tb_polarity + 1) * 2.5
+                review.textblob_sentiment_score = tb_polarity
+
+                # 🤖 BERT
+                try:
+                    bert_result = bert_analyzer(comment[:512])[0]
+                    review.bert_sentiment_label = bert_result['label']
+                    review.bert_sentiment_score = round(bert_result['score'], 3)
+
+                    # Convert "4 stars" → 4 → 8.0 scale
+                    stars = int(bert_result['label'].split()[0])
+                    bert_score_scaled = stars * 1.0
+                except Exception as e:
+                    self.stderr.write(f"BERT greška: {e}")
+                    review.bert_sentiment_label = None
+                    review.bert_sentiment_score = None
+                    bert_score_scaled = 5.0
+
+                # 🧠 Final hybrid score
+                final_score = round((0.6 * bert_score_scaled + 0.4 * tb_score_scaled), 2)
+                review.sentiment_score = final_score
+                review.rating = round(final_score / 2)
 
             review.save()
             updated_count += 1

@@ -1,10 +1,9 @@
-from django.contrib import admin
-from django.db import models  # <--- OVO JE NEDOSTAJALO
-
+from django.db import models
 from .models import Product, Review, Comment, ReviewRating, Comparison, UserProfile, ProductReview
-
 from django.contrib import admin
-from django.contrib.auth.models import User
+
+
+
 
 class ReviewInline(admin.TabularInline):
     model = Review
@@ -22,9 +21,9 @@ class ProductAdmin(admin.ModelAdmin):
 
     fields = (
         'name', 'brand', 'series', 'type',
-        'image_url', 'product_link', 'phonearena_link', 'amazon_link',
+        'image_url', 'product_link', 'phonearena_link',
         'ai_rating', 'ai_rating_display', 'sentiment_summary',
-        'dimensions', 'os', 'display_size', 'chipset', 'battery', 'memory', 'camera'
+
     )
 
     def ai_rating_display(self, obj):
