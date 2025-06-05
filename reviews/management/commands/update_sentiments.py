@@ -5,6 +5,8 @@ from transformers import pipeline
 from tqdm import tqdm
 
 bert_analyzer = pipeline("sentiment-analysis", model="microsoft/deberta-v3-base", device=0)  # device=0 koristi prvi GPU
+
+
 class Command(BaseCommand):
     help = "Ažurira sentiment za sve recenzije i ponovno računa prosječnu ocjenu proizvoda."
 

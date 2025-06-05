@@ -2,6 +2,7 @@ import re
 from textblob import TextBlob
 from transformers import pipeline
 
+
 bert_analyzer = pipeline("sentiment-analysis")
 
 
@@ -21,7 +22,7 @@ def label_to_score(label):
         "NEGATIVE": 1.5
     }[label]
 
-
+#provjera sentiment analize
 def analyze_hybrid_sentiment(comment):
     comment = comment.strip()
     lower_comment = comment.lower()
@@ -91,7 +92,6 @@ def count_sentiments(reviews):
     return counts
 
 
-
 def analyze_sentiment(text):
     blob_score = TextBlob(text).sentiment.polarity
     tb_score = round(blob_score, 4)
@@ -106,7 +106,7 @@ def analyze_sentiment(text):
     return {
         "textblob_sentiment_score": tb_score,
         "sentiment_score": sentiment_score,  # 0–5
-        "rating": rating,                    # 0–5
+        "rating": rating,  # 0–5
         "bert_sentiment_label": bert_label,
         "bert_sentiment_score": bert_score,
     }

@@ -1,14 +1,8 @@
 from django.db import models
 from django.contrib.auth import get_user_model
-from textblob import TextBlob
-from transformers import pipeline
-
 from .utils import analyze_sentiment
 
 User = get_user_model()
-
-bert_analyzer = pipeline("sentiment-analysis")
-
 
 class Product(models.Model):
     name = models.CharField(max_length=255)
@@ -24,10 +18,10 @@ class Product(models.Model):
     def ai_rating_calculated(self):
         reviews = ProductReview.objects.filter(product=self)
         if not reviews.exists():
-            return 5.0
-        total_score = sum(review.sentiment_score for review in reviews if review.sentiment_score is not None)
+            return 2.5  # default na skali 0–5
+        total_score = sum(r.sentiment_score for r in reviews if r.sentiment_score is not None)
         count = reviews.filter(sentiment_score__isnull=False).count()
-        return round(total_score / count, 1) if count else 5.0
+        return round(total_score / count, 2) if count else 2.5
 
     def __str__(self):
         return self.name
@@ -38,8 +32,8 @@ class ProductReview(models.Model):
     username = models.CharField(max_length=255, default="Anonymous")
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
     comment = models.TextField()
-    rating = models.FloatField(null=True, blank=True)  # ✅ now accepts floats (0–5)
-    sentiment_score = models.FloatField(null=True, blank=True)  # AI score 0–10
+    rating = models.FloatField(null=True, blank=True)  # skala 0–5
+    sentiment_score = models.FloatField(null=True, blank=True)  # AI score 0–5
     source_url = models.URLField(blank=True, null=True)
     bert_sentiment_label = models.CharField(max_length=20, null=True, blank=True)
     bert_sentiment_score = models.FloatField(null=True, blank=True)
@@ -56,8 +50,8 @@ class ProductReview(models.Model):
         if self.comment:
             result = analyze_sentiment(self.comment)
             self.textblob_sentiment_score = result["textblob_sentiment_score"]
-            self.sentiment_score = result["sentiment_score"]
-            self.rating = min(max(result["rating"], 0.0), 5.0)  # ✅ ograniči od 0 do 5
+            self.sentiment_score = min(max(result["sentiment_score"], 0.0), 5.0)
+            self.rating = min(max(result["rating"], 0.0), 5.0)
             self.bert_sentiment_label = result["bert_sentiment_label"]
             self.bert_sentiment_score = result["bert_sentiment_score"]
         super().save(*args, **kwargs)
@@ -73,7 +67,6 @@ class Review(models.Model):
     comment = models.TextField(blank=True, null=True)
     content = models.TextField(blank=True, null=True)
     rating = models.IntegerField(blank=True, null=True)
-
     source_url = models.URLField(blank=True, null=True)
 
     def __str__(self):
