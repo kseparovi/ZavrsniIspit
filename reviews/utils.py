@@ -2,7 +2,8 @@ import re
 from textblob import TextBlob
 from transformers import pipeline
 
-bert_analyzer = pipeline("sentiment-analysis", model="nlptown/bert-base-multilingual-uncased-sentiment")
+bert_analyzer = pipeline("sentiment-analysis")
+
 
 def map_stars_to_label(stars):
     if stars <= 2:
@@ -12,12 +13,14 @@ def map_stars_to_label(stars):
     else:
         return "POSITIVE"
 
+
 def label_to_score(label):
     return {
         "POSITIVE": 4.5,
         "NEUTRAL": 2.5,
         "NEGATIVE": 1.5
     }[label]
+
 
 def analyze_hybrid_sentiment(comment):
     comment = comment.strip()
@@ -72,6 +75,7 @@ def calculate_hybrid_rating(reviews):
         return None
     return round(total_score / count, 1)
 
+
 def count_sentiments(reviews):
     counts = {"positive": 0, "negative": 0, "neutral": 0}
     for r in reviews:
@@ -86,10 +90,7 @@ def count_sentiments(reviews):
             counts["neutral"] += 1
     return counts
 
-bert_analyzer = pipeline("sentiment-analysis")
 
-
-bert_analyzer = pipeline("sentiment-analysis")
 
 def analyze_sentiment(text):
     blob_score = TextBlob(text).sentiment.polarity

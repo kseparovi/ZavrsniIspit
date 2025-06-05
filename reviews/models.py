@@ -5,11 +5,10 @@ from transformers import pipeline
 
 from .utils import analyze_sentiment
 
-
-
 User = get_user_model()
 
 bert_analyzer = pipeline("sentiment-analysis")
+
 
 class Product(models.Model):
     name = models.CharField(max_length=255)
@@ -32,6 +31,7 @@ class Product(models.Model):
 
     def __str__(self):
         return self.name
+
 
 class ProductReview(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='reviews')
@@ -64,6 +64,7 @@ class ProductReview(models.Model):
 
     def __str__(self):
         return f"Review by {self.username} on {self.product.name}"
+
 
 class Review(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='detailed_reviews')
