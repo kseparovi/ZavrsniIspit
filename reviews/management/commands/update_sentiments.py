@@ -4,8 +4,8 @@ from textblob import TextBlob
 from transformers import pipeline
 from tqdm import tqdm
 
-bert_analyzer = pipeline("sentiment-analysis", model="microsoft/deberta-v3-base", device=0)  # device=0 koristi prvi GPU
-
+# ✅ Koristi stabilniji, laganiji model koji ne zahtijeva tiktoken ni sentencepiece
+bert_analyzer = pipeline("sentiment-analysis", model="distilbert-base-uncased-finetuned-sst-2-english", device=-1)
 
 class Command(BaseCommand):
     help = "Ažurira sentiment za sve recenzije i ponovno računa prosječnu ocjenu proizvoda."
@@ -17,7 +17,7 @@ class Command(BaseCommand):
         force = options['force']
         reviews = ProductReview.objects.all()
 
-        self.stdout.write(self.style.SUCCESS(f"🔄 Ažuriranje sentimenta za {reviews.count()} recenzija..."))
+        self.stdout.write(self.style.SUCCESS(f"🔄 Ažuriram sentiment za {reviews.count()} recenzija..."))
         updated_count = 0
 
         for review in tqdm(reviews):
@@ -26,44 +26,49 @@ class Command(BaseCommand):
 
             comment = review.comment.strip()
             if len(comment) < 20:
-                # Prekratki komentari -> neutralno
+                # Prekratki komentari se tretiraju kao neutralni
                 review.sentiment_score = 5.0
                 review.rating = 3
                 review.bert_sentiment_label = None
                 review.bert_sentiment_score = None
                 review.textblob_sentiment_score = None
             else:
-                # 🔍 TextBlob
+                # 🔍 TextBlob analiza
                 tb_polarity = TextBlob(comment).sentiment.polarity
-                tb_score_scaled = (tb_polarity + 1) * 2.5
-                review.textblob_sentiment_score = tb_polarity
+                tb_score_scaled = (tb_polarity + 1) * 2.5  # skala 0–5
+                review.textblob_sentiment_score = round(tb_polarity, 3)
 
-                # 🤖 BERT
+                # 🤖 BERT analiza
                 try:
                     bert_result = bert_analyzer(comment[:512])[0]
-                    review.bert_sentiment_label = bert_result['label']
-                    review.bert_sentiment_score = round(bert_result['score'], 3)
+                    label = bert_result['label']
+                    score = bert_result['score']
+                    review.bert_sentiment_label = label
+                    review.bert_sentiment_score = round(score, 3)
 
-                    # Convert "4 stars" → 4 → 8.0 scale
-                    stars = int(bert_result['label'].split()[0])
-                    bert_score_scaled = stars * 1.0
+                    if label == "POSITIVE":
+                        bert_score_scaled = 5.0
+                    elif label == "NEGATIVE":
+                        bert_score_scaled = 0.0
+                    else:
+                        bert_score_scaled = 2.5
                 except Exception as e:
                     self.stderr.write(f"BERT greška: {e}")
                     review.bert_sentiment_label = None
                     review.bert_sentiment_score = None
-                    bert_score_scaled = 5.0
+                    bert_score_scaled = 2.5
 
-                # 🧠 Final hybrid score
+                # 🧠 Kombinirani (hibridni) score
                 final_score = round((0.6 * bert_score_scaled + 0.4 * tb_score_scaled), 2)
                 review.sentiment_score = final_score
-                review.rating = round(final_score / 2)
+                review.rating = min(max(round(final_score), 1), 5)
 
             review.save()
             updated_count += 1
 
         self.stdout.write(self.style.SUCCESS(f"✅ Ažurirano sentiment polje za {updated_count} recenzija."))
 
-        # Ažuriranje ai_rating za sve proizvode
+        # 📊 Ažuriraj prosječne ocjene za proizvode
         self.stdout.write("📈 Računam nove AI ocjene za proizvode...")
         for product in Product.objects.all():
             reviews = product.reviews.filter(sentiment_score__isnull=False)
@@ -80,7 +85,7 @@ class Command(BaseCommand):
             score = r.sentiment_score
             strength = abs(score - 5)
             if strength < 1:
-                continue  # preskoči neutralne
+                continue  # neutralne ignoriramo
 
             length_weight = min(len(r.comment) / 300, 1)
             weight = strength * length_weight
