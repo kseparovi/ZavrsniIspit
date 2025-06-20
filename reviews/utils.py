@@ -1,6 +1,7 @@
 import re
 from textblob import TextBlob
 from transformers import pipeline
+from reviews.sentiment import analyze_sentiment
 
 
 bert_analyzer = pipeline("sentiment-analysis")
@@ -92,21 +93,34 @@ def count_sentiments(reviews):
     return counts
 
 
-def analyze_sentiment(text):
-    blob_score = TextBlob(text).sentiment.polarity
-    tb_score = round(blob_score, 4)
-    bert_result = bert_analyzer(text[:512])[0]  # truncate to avoid BERT limit
-    bert_label = bert_result["label"]
-    bert_score = round(bert_result["score"], 3)
+from reviews.models import Review, ProductReview
 
-    # AI kombinirana ocjena — skala 0–5
-    sentiment_score = round((tb_score + 1) * 2.5, 2)
-    rating = sentiment_score  # ako koristiš istu vrijednost
+def sync_reviews_to_product_reviews():
+    """
+    Pretvara Review (sirove recenzije iz scrapera) u ProductReview instancu (s analizom).
+    Izbjegava duplikate prema kombinaciji product + username + comment.
+    """
+    count = 0
+    for r in Review.objects.all():
+        if ProductReview.objects.filter(product=r.product, username=r.username, comment=r.comment).exists():
+            continue
 
-    return {
-        "textblob_sentiment_score": tb_score,
-        "sentiment_score": sentiment_score,  # 0–5
-        "rating": rating,  # 0–5
-        "bert_sentiment_label": bert_label,
-        "bert_sentiment_score": bert_score,
-    }
+        # Pozovi analizator ako želiš odmah izračunati sentiment
+        from reviews.utils import analyze_sentiment
+        sentiment = analyze_sentiment(r.comment)
+
+        ProductReview.objects.create(
+            product=r.product,
+            username=r.username,
+            comment=r.comment,
+            rating=round(sentiment['rating']),
+            sentiment_score=sentiment['sentiment_score'],
+            textblob_sentiment_score=sentiment['textblob_sentiment_score'],
+            bert_sentiment_label=sentiment['bert_sentiment_label'],
+            bert_sentiment_score=sentiment['bert_sentiment_score'],
+        )
+        count += 1
+
+    print(f"✅ Sinkronizirano {count} novih ProductReview recenzija.")
+
+

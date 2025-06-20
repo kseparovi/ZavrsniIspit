@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth import get_user_model
-from .utils import analyze_sentiment
+from .sentiment import analyze_sentiment
+
 
 User = get_user_model()
 
